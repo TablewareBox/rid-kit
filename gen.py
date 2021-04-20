@@ -14,7 +14,7 @@ from tools.general_plumed import general_plumed
 
 mol_dir_fmt = "mol/alan/%s/%02d"
 bf_file_copy = ["conf.gro", "grompp.mdp", "topol.top"]
-res_file_copy = ["clean.sh", "cmpf.sh", "cmpf.py", "cmpf_wt.py",
+res_file_copy = ["clean.sh", "cmpf.sh", "cmpf.py",
                  "general_mkres.sh", "tools", "run.res.sh", "equi.mdp"]
 afed_file_copy = ["sel.angle.py"]
 rid_run = "rid.py"
@@ -530,7 +530,12 @@ def _main():
     elif args.TASK == "abnn" or args.TASK == "rid":
         gen_rid(args.output, args.GEN_DEF,
                 args.CV_DEF, mol_dir, res_dir, rid_dir)
-    elif args.TASK == "rid-sits":
+    elif args.TASK == "rid_sits":
+        global rid_run, rid_param, bf_file_copy, res_file_copy
+        rid_run = "rid_sits.py"
+        rid_param = "rid_sits.json"
+        bf_file_copy += ["grompp_sits_iter.mdp", "grompp_sits.mdp"]
+        res_file_copy += ["cmpf_wt.py", "cmpf_wtij.py"]
         gen_rid(args.output, args.GEN_DEF,
                 args.CV_DEF, mol_dir, res_dir, rid_dir)
     elif args.TASK == "rit":
