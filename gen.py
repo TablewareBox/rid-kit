@@ -83,7 +83,9 @@ def gen_bf(out_dir,
 
     for ii in bf_file_copy:
         shutil.copy(mol_dir + ii, out_dir)
-    make_grompp_bias(out_dir + "grompp.mdp", 50000, bf_traj_stride)
+    mdps = glob.glob(out_dir + "*.mdp")
+    for mdp in mdps:
+        make_grompp_res(mdp, 50000, bf_traj_stride)
 
     confs = glob.glob(mol_dir + "conf*gro")
     for cc in confs:
@@ -131,7 +133,9 @@ def gen_res(out_dir,
 
     for ii in bf_file_copy:
         shutil.copy(mol_dir + ii, out_dir)
-    make_grompp_res(out_dir + "grompp.mdp", 50000, res_traj_stride)
+    mdps = glob.glob(out_dir + "*.mdp")
+    for mdp in mdps:
+        make_grompp_res(mdp, 50000, res_traj_stride)
 
     for ii in res_file_copy:
         if os.path.isdir(res_dir + ii):
@@ -208,7 +212,9 @@ def gen_afed(out_dir,
 
     for ii in bf_file_copy:
         shutil.copy(mol_dir + ii, out_dir)
-    make_grompp_bias(out_dir + "grompp.mdp", 50000, afed_traj_stride)
+    mdps = glob.glob(out_dir + "*.mdp")
+    for mdp in mdps:
+        make_grompp_res(mdp, 50000, afed_traj_stride)
 
     for ii in afed_file_copy:
         if os.path.isdir(afed_dir + ii):

@@ -115,22 +115,22 @@ def make_grompp_res(gro_file, nsteps, frame_freq):
 
 
 def make_grompp_sits(gro_file, sits_data, sits_iter=False, iter_index=0):
-    replace(gro_file, "energygrp.*=.*", "energygrp = %d" % sits_data["sits_energrp"])
-    replace(gro_file, "sits-enhance-mode.*=.*", "sits-enhance-mode = %d" % sits_data["sits-enhance-mode"])
+    replace(gro_file, "energygrp.*=.*", "energygrp = %s" % sits_data["sits_energrp"])
+    replace(gro_file, "sits-enhance-mode.*=.*", "sits-enhance-mode = %s" % sits_data["sits-enhance-mode"])
     replace(gro_file, "sits-t-numbers.*=.*", "sits-t-numbers = %d" % sits_data["sits-t-numbers"])
     replace(gro_file, "nstsitsrecord.*=.*", "nstsitsrecord = %d" % sits_data["nstsitsrecord"])
     replace(gro_file, "nstsitsupdate.*=.*", "nstsitsupdate = %d" % sits_data["nstsitsupdate"])
-    replace(gro_file, "sits-t-low.*=.*", "sits-t-low = %d" % sits_data["sits-t-low"])
-    replace(gro_file, "sits-t-high.*=.*", "sits-t-high = %d" % sits_data["sits-t-high"])
-    replace(gro_file, "sits-energy-shift.*=.*", "sits-energy-shift = %d" % sits_data["sits-energy-shift"])
-    replace(gro_file, "sits-nk-rest-file.*=.*", "sits-nk-rest-file = %d" % sits_data["sits-nk-rest-file"])
-    replace(gro_file, "sits-norm-rest-file.*=.*", "sits-norm-rest-file = %d" % sits_data["sits-norm-rest-file"])
+    replace(gro_file, "sits-t-low.*=.*", "sits-t-low = %.2f" % sits_data["sits-t-low"])
+    replace(gro_file, "sits-t-high.*=.*", "sits-t-high = %.2f" % sits_data["sits-t-high"])
+    replace(gro_file, "sits-energy-shift.*=.*", "sits-energy-shift = %.2f" % sits_data["sits-energy-shift"])
+    replace(gro_file, "sits-nk-rest-file.*=.*", "sits-nk-rest-file = %s" % sits_data["sits-nk-rest-file"])
+    replace(gro_file, "sits-norm-rest-file.*=.*", "sits-norm-rest-file = %s" % sits_data["sits-norm-rest-file"])
     if sits_iter:
         replace(gro_file, "niter.*=.*", "niter = %d" % sits_data["niter"])
         replace(gro_file, "sits-constant-nk.*=.*", "sits-constant-nk = no")
         if iter_index == 0:
-            replace(gro_file, "sits-nk-rest-file.*=.*", ";sits-nk-rest-file = %d" % sits_data["sits-nk-rest-file"])
-            replace(gro_file, "sits-norm-rest-file.*=.*", ";sits-norm-rest-file = %d" % sits_data["sits-norm-rest-file"])
+            replace(gro_file, "sits-nk-rest-file.*=.*", ";sits-nk-rest-file = %s" % sits_data["sits-nk-rest-file"])
+            replace(gro_file, "sits-norm-rest-file.*=.*", ";sits-norm-rest-file = %s" % sits_data["sits-norm-rest-file"])
     else:
         replace(gro_file, "niter.*=.*", "niter = %d" % 0)
         replace(gro_file, "sits-constant-nk.*=.*", "sits-constant-nk = yes")
@@ -323,8 +323,9 @@ def make_res(iter_index,
         for ii in range(conf_start, nconf, conf_every):
             work_path = res_path + ((walker_format + ".%06d") %
                                     (walker_idx, sel_idx[ii])) + "/"
-            mol_conf_file = work_path + "grompp.mdp"
-            make_grompp_res(mol_conf_file, nsteps, frame_freq)
+            mol_conf_files = glob.glob(work_path + "*.mdp")
+            for mol_conf_file in mol_conf_files:
+                make_grompp_res(mol_conf_file, nsteps, frame_freq)
             replace(work_path + res_plm,
                     "STRIDE=[^ ]* ", "STRIDE=%d " % frame_freq)
         
@@ -338,11 +339,13 @@ def make_res(iter_index,
 
 def run_res(iter_index,
             json_file,
-            exec_machine=MachineLocal,
-            sits=False):
+            exec_machine=MachineLocal):
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    sits_param = jdata.get("sits_settings", None)
     gmx_prep = jdata["gmx_prep"]
+    if sits_param is not None:
+        gmx_prep += " -f grompp_sits.mdp"
     gmx_run = jdata["gmx_run"]
     res_thread = jdata["res_thread"]
     gmx_run = gmx_run + (" -nt %d " % res_thread)

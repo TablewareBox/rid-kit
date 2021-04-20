@@ -198,6 +198,11 @@ def run_enhc(iter_index,
     work_path = iter_name + "/" + enhc_name + "/"
 
     gmx_prep = jdata["gmx_prep"]
+    if sits_param is not None:
+        if sits_iter:
+            gmx_prep += " -f grompp_sits_iter.mdp"
+        else:
+            gmx_prep += " -f grompp_sits.mdp"
     gmx_run = jdata["gmx_run"]
     enhc_thread = jdata["bias_thread"]
     gmx_run = gmx_run + (" -nt %d " % enhc_thread)
@@ -413,6 +418,7 @@ def run_iter(json_file, init_model):
 
     global exec_machine
 
+    create_path("sits")
     data_name = "data"
     for ii in range(numb_iter):
         if ii > 0:
@@ -420,6 +426,7 @@ def run_iter(json_file, init_model):
         if ii % niter_per_sits == 0:
             kk = int(ii / niter_per_sits)
             log_iter("run_sits_iter", kk, 0)
+            create_path(join("sits", make_iter_name(kk)))
             if kk > 0:
                 open(join("sits", make_iter_name(kk-1), "rid_iter_end.dat"), "w+").write("%d" % ii)
             open(join("sits", make_iter_name(kk), "rid_iter_begin.dat"), "w+").write("%d" % ii)
