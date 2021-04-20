@@ -77,8 +77,8 @@
         "##SBATCH --exclude=gpu[01-04,06-13]",
         "module load cuda/10.0",
         "module load cuDNN/v7.6forcuda10.0",
-        "module load plumed/2.5.1",
-        "module swap gromacs/2018.3-serial"
+        "source ~/env/plumed261_rid.env",
+        "source ~/env/gmx_2020.2_sits-bias.env"
     ],
     "batch_sources":    [
     ],

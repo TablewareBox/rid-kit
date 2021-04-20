@@ -115,7 +115,7 @@ def make_grompp_res(gro_file, nsteps, frame_freq):
 
 
 def make_grompp_sits(gro_file, sits_data, sits_iter=False, iter_index=0):
-    replace(gro_file, "energygrp.*=.*", "energygrp = %s" % sits_data["sits_energrp"])
+    replace(gro_file, "energygrps.*=.*", "energygrps = %s" % sits_data["sits_energrp"])
     replace(gro_file, "sits-enhance-mode.*=.*", "sits-enhance-mode = %s" % sits_data["sits-enhance-mode"])
     replace(gro_file, "sits-t-numbers.*=.*", "sits-t-numbers = %d" % sits_data["sits-t-numbers"])
     replace(gro_file, "nstsitsrecord.*=.*", "nstsitsrecord = %d" % sits_data["nstsitsrecord"])
