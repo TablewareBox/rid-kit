@@ -531,9 +531,10 @@ def _main():
         gen_rid(args.output, args.GEN_DEF,
                 args.CV_DEF, mol_dir, res_dir, rid_dir)
     elif args.TASK == "rid_sits":
-        global rid_run, rid_param, bf_file_copy, res_file_copy
+        global rid_run, rid_param, rid_file_copy, bf_file_copy, res_file_copy
         rid_run = "rid_sits.py"
         rid_param = "rid_sits.json"
+        rid_file_copy = [rid_run, rid_param, "template", "lib"]
         bf_file_copy += ["grompp_sits_iter.mdp", "grompp_sits.mdp"]
         res_file_copy += ["cmpf_wt.py", "cmpf_wtij.py"]
         gen_rid(args.output, args.GEN_DEF,
