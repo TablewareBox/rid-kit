@@ -90,6 +90,11 @@ def make_enhc(iter_index,
 
     for walker_idx in range(numb_walkers):
         walker_path = work_path + make_walker_name(walker_idx) + "/"
+        if sits_param is not None:
+            if os.path.exists(join("sits", "log_nk.dat")):
+                shutil.copyfile(join("sits", "log_nk.dat"), join(walker_path, "log_nk.dat"))
+            if os.path.exists(join("sits", "log_norm.dat")):
+                shutil.copyfile(join("sits", "log_norm.dat"), join(walker_path, "log_norm.dat"))
         create_path(walker_path)
         # copy md ifles
         for ii in mol_files:
@@ -326,13 +331,8 @@ def run_sits_iter(sits_iter_index, json_file):
     run_enhc(sits_iter_index, json_file, sits_iter=True)
 
 def post_sits_iter(sits_iter_index, json_file):
-    sits_dir = join("sits", make_iter_name(sits_iter_index))
-    walker_dir = join(sits_dir, enhc_name, make_walker_name(0))
-    cmd_save_sits = ""
-    cmd_save_sits += "tail -n 1 %s > %s\n" % (join(walker_dir, "sits_nk.dat"), join(sits_dir, "log_nk.dat"))
-    cmd_save_sits += "tail -n 1 %s > %s\n" % (join(walker_dir, "sits_norm.dat"), join(sits_dir, "log_norm.dat"))
-    sp.check_call(cmd_save_sits, shell=True)
 
+    sits_dir = join("sits", make_iter_name(sits_iter_index))
     fp = open(json_file, 'r')
     jdata = json.load(fp)
     sits_param = jdata.get("sits_settings", None)
@@ -345,6 +345,15 @@ def post_sits_iter(sits_iter_index, json_file):
         np.savetxt(join(sits_dir, "beta_k.dat"), beta_k)
     if not os.path.exists(join("sits", "beta_0.dat")):
         np.savetxt(join("sits", "beta_0.dat"), np.array([beta_0]))
+    walker_dir = join(sits_dir, enhc_name, make_walker_name(0))
+
+    cmd_save_sits = ""
+    cmd_save_sits += "tail -n 1 %s > %s\n" % (join(walker_dir, "sits_nk.dat"), join(sits_dir, "log_nk.dat"))
+    cmd_save_sits += "tail -n 1 %s > %s\n" % (join(walker_dir, "sits_norm.dat"), join(sits_dir, "log_norm.dat"))
+    cmd_save_sits += "cp %s %s" % (join(sits_dir, "log_nk.dat"), join("sits", "log_nk.dat"))
+    cmd_save_sits += "cp %s %s" % (join(sits_dir, "log_norm.dat"), join("sits", "log_norm.dat"))
+    cmd_save_sits += "cp %s %s" % (join(sits_dir, "beta_k.dat"), join("sits", "beta_k.dat"))
+    sp.check_call(cmd_save_sits, shell=True)
 
 
 def run_train_eff(sits_iter_index, json_file):

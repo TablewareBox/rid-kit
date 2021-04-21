@@ -11,7 +11,7 @@
 
     "sits_settings": {
         "sits_nsteps":       500000,
-        "sits_energrp":      "MOL",
+        "sits_energrp":      "Protein",
         "sits-enhance-mode": "PP_AND_PW",
         "sits-t-numbers":    31,
         "nstsitsrecord":     1,

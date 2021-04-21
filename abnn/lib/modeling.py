@@ -180,6 +180,7 @@ def make_res(iter_index,
              json_file):
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    sits_param = jdata.get("sits_settings", None)
     numb_walkers = jdata["numb_walkers"]
     template_dir = jdata["template_dir"]
     bias_nsteps = jdata["bias_nsteps"]
@@ -205,6 +206,11 @@ def make_res(iter_index,
     # check if we have graph in enhc
     for walker_idx in range(numb_walkers):
         walker_path = join(enhc_path, walker_format % walker_idx) + "/"
+        if sits_param is not None:
+            if os.path.exists(join("sits", "log_nk.dat")):
+                shutil.copyfile(join("sits", "log_nk.dat"), join(walker_path, "log_nk.dat"))
+            if os.path.exists(join("sits", "log_norm.dat")):
+                shutil.copyfile(join("sits", "log_norm.dat"), join(walker_path, "log_norm.dat"))
         os.chdir(walker_path)
 
         graph_files = glob.glob("*.pb")
