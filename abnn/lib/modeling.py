@@ -40,8 +40,7 @@ mol_name = "mol"
 mol_files = ["grompp.mdp", "grompp_sits.mdp", "grompp_sits_iter.mdp", "grompp_restraint.mdp", "topol.top"]
 
 res_name = "01.resMD"
-res_files = ["cmpf.sh", "cmpf.py", "cmpf_wt.py",
-             "general_mkres.sh", "plumed.res.templ", "tools"]
+res_files = ["cmpf.sh", "cmpf.py", "cmpf_wt.py", "cmpf_wtij.py", "general_mkres.sh", "plumed.res.templ", "tools"]
 res_plm = "plumed.res.dat"
 
 train_name = "02.train"
@@ -138,16 +137,17 @@ def make_grompp_sits(gro_file, sits_data, sits_iter=False, iter_index=0):
 
 def copy_file_list(file_list, from_path, to_path):
     for jj in file_list:
-        if os.path.isfile(from_path + jj):
-            shutil.copy(from_path + jj, to_path)
-        elif os.path.isdir(from_path + jj):
+        file = join(from_path, jj)
+        if os.path.isfile(file):
+            shutil.copy(file, to_path)
+        elif os.path.isdir(file):
             cwd = os.getcwd()
-            os.chdir(from_path+jj)
+            os.chdir(file)
             files = glob.glob("*")
             os.chdir(cwd)
-            os.makedirs(to_path+jj)
+            os.makedirs(join(to_path, jj))
             for ff in files:
-                shutil.copy(from_path+jj+'/'+ff, to_path+jj+'/'+ff)
+                shutil.copy(join(file, ff), join(to_path, jj, ff))
             #    print(from_path+jj+'/'+ff, to_path+jj+'/'+ff)
             # if os.path.exists(to_path+jj) :
             #     print('error!!!!!!!!!!!!!!!!')

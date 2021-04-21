@@ -415,19 +415,28 @@ def run_iter(json_file, init_model):
     niter_per_sits = sits_param.get("niter_per_sits", 100000000)
     numb_task = 8
     record = "record.rid"
+    record_sits = "record.sits"
     cleanup = jdata["cleanup"]
 
     iter_rec = [0, -1]
+    sits_iter_rec = [0, -1]
     if os.path.isfile(record):
         with open(record) as frec:
             for line in frec:
                 iter_rec = [int(x) for x in line.split()]
         logging.info("continue from iter %03d task %02d" %
                      (iter_rec[0], iter_rec[1]))
+    if os.path.isfile(record_sits):
+        with open(record_sits) as frec:
+            for line in frec:
+                sits_iter_rec = [int(x) for x in line.split()]
+        logging.info("continue from iter %03d task %02d" %
+                     (sits_iter_rec[0], sits_iter_rec[1]))
 
     global exec_machine
 
-    create_path("sits")
+    if sits_iter_rec == [0, -1]:
+        create_path("sits")
     data_name = "data"
     for ii in range(numb_iter):
         if ii > 0:
@@ -439,15 +448,25 @@ def run_iter(json_file, init_model):
             if kk > 0:
                 open(join("sits", make_iter_name(kk-1), "rid_iter_end.dat"), "w+").write("%d" % ii)
             open(join("sits", make_iter_name(kk), "rid_iter_begin.dat"), "w+").write("%d" % ii)
-
-            make_sits_iter(kk, json_file, prev_model)
-            run_sits_iter(kk, json_file)
-            post_sits_iter(kk, json_file)
-            if kk > 0:
-                make_train_eff(kk, json_file)
-                run_train_eff(kk, json_file, exec_machine)
-                post_train_eff(kk, json_file)
-
+            for jj in range(6):
+                if kk * max_tasks + jj <= sits_iter_rec[0] * max_tasks + sits_iter_rec[1]:
+                    continue
+                if jj == 0:
+                    make_sits_iter(kk, json_file, prev_model)
+                elif jj == 1:
+                    run_sits_iter(kk, json_file)
+                elif jj == 2:
+                    post_sits_iter(kk, json_file)
+                elif jj == 3:
+                    if kk > 0:
+                        make_train_eff(kk, json_file)
+                elif jj == 4:
+                    if kk > 0:
+                        run_train_eff(kk, json_file, exec_machine)
+                elif jj == 5:
+                    if kk > 0:
+                        post_train_eff(kk, json_file)
+                record_iter(record_sits, kk, jj)
             data_name = "data%03d" % (kk+1)
         
         for jj in range(numb_task):
