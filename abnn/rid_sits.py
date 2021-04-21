@@ -90,12 +90,12 @@ def make_enhc(iter_index,
 
     for walker_idx in range(numb_walkers):
         walker_path = work_path + make_walker_name(walker_idx) + "/"
+        create_path(walker_path)
         if sits_param is not None:
             if os.path.exists(join("sits", "log_nk.dat")):
                 shutil.copyfile(join("sits", "log_nk.dat"), join(walker_path, "log_nk.dat"))
             if os.path.exists(join("sits", "log_norm.dat")):
                 shutil.copyfile(join("sits", "log_norm.dat"), join(walker_path, "log_norm.dat"))
-        create_path(walker_path)
         # copy md ifles
         for ii in mol_files:
             if os.path.exists(walker_path + ii):
@@ -350,9 +350,9 @@ def post_sits_iter(sits_iter_index, json_file):
     cmd_save_sits = ""
     cmd_save_sits += "tail -n 1 %s > %s\n" % (join(walker_dir, "sits_nk.dat"), join(sits_dir, "log_nk.dat"))
     cmd_save_sits += "tail -n 1 %s > %s\n" % (join(walker_dir, "sits_norm.dat"), join(sits_dir, "log_norm.dat"))
-    cmd_save_sits += "cp %s %s" % (join(sits_dir, "log_nk.dat"), join("sits", "log_nk.dat"))
-    cmd_save_sits += "cp %s %s" % (join(sits_dir, "log_norm.dat"), join("sits", "log_norm.dat"))
-    cmd_save_sits += "cp %s %s" % (join(sits_dir, "beta_k.dat"), join("sits", "beta_k.dat"))
+    cmd_save_sits += "cp %s %s\n" % (join(sits_dir, "log_nk.dat"), join("sits", "log_nk.dat"))
+    cmd_save_sits += "cp %s %s\n" % (join(sits_dir, "log_norm.dat"), join("sits", "log_norm.dat"))
+    cmd_save_sits += "cp %s %s\n" % (join(sits_dir, "beta_k.dat"), join("sits", "beta_k.dat"))
     sp.check_call(cmd_save_sits, shell=True)
 
 

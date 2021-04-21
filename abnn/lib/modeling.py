@@ -197,7 +197,7 @@ def make_res(iter_index,
 
     templ_mol_path = join(template_dir, mol_name)
     templ_res_path = join(template_dir, res_name)
-    res_path = join(iter_name, res_name)
+    res_path = join(iter_name, res_name) + "/"
     create_path(res_path)
 
     ret_list = [True for ii in range(numb_walkers)]
@@ -294,11 +294,11 @@ def make_res(iter_index,
             else:
                 sel_list += "," + str(sel_idx[ii])
         log_task("selected %d confs, indexes: %s" % (nconf, sel_list))
+        os.chdir(base_path)
 
         for ii in range(conf_start, nconf, conf_every):
             # print (ii, sel_idx[ii])
-            work_path = res_path + ((walker_format + ".%06d") %
-                                    (walker_idx, sel_idx[ii])) + "/"
+            work_path = join(res_path, (walker_format + ".%06d") % (walker_idx, sel_idx[ii])) + "/"
             os.makedirs(work_path)
             copy_file_list(mol_files, templ_mol_path, work_path)
             copy_file_list(res_files, templ_res_path, work_path)
@@ -321,7 +321,7 @@ def make_res(iter_index,
             task_dirs.append(dir_str)
             task_args.append(arg_str)
             log_task(task_dirs[-1] + ": " + task_args[-1])
-
+        os.chdir(base_path)
         os.chdir(res_path)
         exec_hosts(MachineLocal, "./general_mkres.sh", 1, task_dirs, task_args)
         os.chdir(base_path)
