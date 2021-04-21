@@ -302,6 +302,11 @@ def make_res(iter_index,
             os.makedirs(work_path)
             copy_file_list(mol_files, templ_mol_path, work_path)
             copy_file_list(res_files, templ_res_path, work_path)
+            if sits_param is not None:
+                if os.path.exists(join("sits", "log_nk.dat")):
+                    shutil.copyfile(join("sits", "log_nk.dat"), join(work_path, "log_nk.dat"))
+                if os.path.exists(join("sits", "log_norm.dat")):
+                    shutil.copyfile(join("sits", "log_norm.dat"), join(work_path, "log_norm.dat"))
             conf_file = walker_path + enhc_out_conf + \
                 ("conf%d.gro" % sel_idx[ii])
             if os.path.exists(work_path + "conf.gro"):
