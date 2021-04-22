@@ -196,6 +196,7 @@ def run_enhc(iter_index,
              sits_iter=False):
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    cmd_env = jdata.get("cmd_sources", [])
     sits_param = jdata.get("sits_settings", None)
 
     iter_name = make_iter_name(iter_index)
@@ -221,8 +222,8 @@ def run_enhc(iter_index,
         gmx_run = gmx_run + " -plumed " + enhc_plm
     else:
         gmx_run = gmx_run + " -plumed " + enhc_bf_plm
-    gmx_prep_cmd = cmd_append_log(gmx_prep, gmx_prep_log)
-    gmx_run_cmd = cmd_append_log(gmx_run, gmx_run_log)
+    gmx_prep_cmd = cmd_append_log(gmx_prep, gmx_prep_log, env=cmd_env)
+    gmx_run_cmd = cmd_append_log(gmx_run, gmx_run_log, env=cmd_env)
     numb_walkers = jdata["numb_walkers"] if not sits_iter else 1
     batch_jobs = jdata['batch_jobs']
     batch_time_limit = jdata['batch_time_limit']
@@ -252,9 +253,10 @@ def post_enhc(iter_index,
 
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    cmd_env = jdata.get("cmd_sources", [])
     gmx_split = jdata["gmx_split_traj"]
     gmx_split_log = "gmx_split.log"
-    gmx_split_cmd = cmd_append_log(gmx_split, gmx_split_log)
+    gmx_split_cmd = cmd_append_log(gmx_split, gmx_split_log, env=cmd_env)
 
     all_task = glob.glob(work_path + "/[0-9]*[0-9]")
     all_task.sort()

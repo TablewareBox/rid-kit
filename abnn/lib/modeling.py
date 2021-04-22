@@ -23,7 +23,7 @@ from lib.batch_exec import exec_batch_group
 
 from template.tools.cluster_cv import sel_from_cluster
 
-cv_dim = 18
+cv_dim = 2
 
 shell_clustering = False
 
@@ -169,9 +169,11 @@ def create_path(path):
     os.makedirs(path)
 
 
-def cmd_append_log(cmd,
-                   log_file):
-    ret = cmd
+def cmd_append_log(cmd, log_file, env=[]):
+    env_string = "\n".join(env)
+    if env_string != "":
+        env_string += "\n"
+    ret = env_string + cmd
     ret = ret + " 1> " + log_file
     ret = ret + " 2> " + log_file
     return ret
@@ -181,6 +183,7 @@ def make_res(iter_index,
              json_file):
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    cmd_env = jdata.get("cmd_sources", [])
     sits_param = jdata.get("sits_settings", None)
     if sits_param is not None:
         sits_param["nst-sits-enerd-out"] = jdata["res_frame_freq"]
@@ -221,7 +224,7 @@ def make_res(iter_index,
             os.chdir(walker_path)
             sel_cmd = "python3 test.std.py -m *.pb -t %f -d %s --output sel.out --output-angle sel.angle.out" % (
                 sel_threshold, enhc_out_angle)
-            sel_cmd = cmd_append_log(sel_cmd, "sel.log")
+            sel_cmd = cmd_append_log(sel_cmd, "sel.log", env=cmd_env)
             log_task("select with threshold %f" % sel_threshold)
             log_task(sel_cmd)
             sp.check_call(sel_cmd, shell=True)
@@ -344,7 +347,7 @@ def make_res(iter_index,
                 make_grompp_res(mol_conf_file, nsteps, frame_freq)
             replace(work_path + res_plm,
                     "STRIDE=[^ ]* ", "STRIDE=%d " % frame_freq)
-        
+
         os.chdir(base_path)
 
     if any(ret_list):
@@ -358,6 +361,7 @@ def run_res(iter_index,
             exec_machine=MachineLocal):
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    cmd_env = jdata.get("cmd_sources", [])
     sits_param = jdata.get("sits_settings", None)
     gmx_prep = jdata["gmx_prep"]
     if sits_param is not None:
@@ -369,9 +373,9 @@ def run_res(iter_index,
     gmx_cont_run = gmx_run + " -cpi state.cpt "
     gmx_prep_log = "gmx_grompp.log"
     gmx_run_log = "gmx_mdrun.log"
-    gmx_prep_cmd = cmd_append_log(gmx_prep, gmx_prep_log)
-    gmx_run_cmd = cmd_append_log(gmx_run, gmx_run_log)
-    gmx_cont_run_cmd = cmd_append_log(gmx_cont_run, gmx_run_log)
+    gmx_prep_cmd = cmd_append_log(gmx_prep, gmx_prep_log, env=cmd_env)
+    gmx_run_cmd = cmd_append_log(gmx_run, gmx_run_log, env=cmd_env)
+    gmx_cont_run_cmd = cmd_append_log(gmx_cont_run, gmx_run_log, env=cmd_env)
     res_group_size = jdata['res_group_size']
     batch_jobs = jdata['batch_jobs']
     batch_time_limit = jdata['batch_time_limit']
@@ -427,6 +431,7 @@ def post_res(iter_index,
              data_name="data"):
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    cmd_env = jdata.get("cmd_sources", [])
     sits_param = jdata.get("sits_settings", None)
     res_cmpf_error = jdata["res_cmpf_error"]
 
@@ -448,7 +453,7 @@ def post_res(iter_index,
         else:
             cmpf_cmd = "python cmpf.py"
     cmpf_log = "cmpf.log"
-    cmpf_cmd = cmd_append_log(cmpf_cmd, cmpf_log)
+    cmpf_cmd = cmd_append_log(cmpf_cmd, cmpf_log, env=cmd_env)
 
     centers = []
     force = []
@@ -481,6 +486,7 @@ def post_res(iter_index,
 def make_train_eff(sits_iter_index, json_file):
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    cmd_env = jdata.get("cmd_sources", [])
     template_dir = jdata["template_dir"]
     numb_model = jdata["numb_model"]
     res_iter = jdata["res_iter"]
@@ -507,7 +513,7 @@ def make_train_eff(sits_iter_index, json_file):
             all_task.sort()
             cmpf_cmd = "python cmpf_wtij.py -d %s -i %s -j %s" % (join(base_path, "sits"), make_iter_name(sits_iter_index), make_iter_name(j))
             cmpf_log = "cmpf.log"
-            cmpf_cmd = cmd_append_log(cmpf_cmd, cmpf_log)
+            cmpf_cmd = cmd_append_log(cmpf_cmd, cmpf_log, env=cmd_env)
 
             centers = []
             force = []
@@ -550,6 +556,10 @@ def make_train_eff(sits_iter_index, json_file):
         create_path(train_path)
         os.makedirs(data_path)
         copy_file_list(train_files, templ_train_path, train_path)
+        replace(join(train_path, "model.py"), "\./data", "./" + data_dir)
+        replace(join(train_path, "model.py"), "data\.", data_name + ".")
+        replace(join(train_path, "main.py"), "\./data", "./" + data_dir)
+        replace(join(train_path, "main.py"), "data\.raw", data_name + ".raw")
 
         # collect data
         log_task("collect data upto %d" % (iter_index))
@@ -651,6 +661,10 @@ def make_train(iter_index,
     create_path(train_path)
     os.makedirs(data_path)
     copy_file_list(train_files, templ_train_path, train_path)
+    replace(join(train_path, "model.py"), "\./data", "./" + data_dir)
+    replace(join(train_path, "model.py"), "data\.", data_name + ".")
+    replace(join(train_path, "main.py"), "\./data", "./" + data_dir)
+    replace(join(train_path, "main.py"), "data\.raw", data_name + ".raw")
 
     # collect data
     log_task("collect data upto %d" % (iter_index))
@@ -712,6 +726,7 @@ def run_train(iter_index,
               sits_iter=False):
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    cmd_env = jdata.get("cmd_sources", [])
     sits_param = jdata.get("sits_settings", None)
 
     numb_model = jdata["numb_model"]
@@ -765,9 +780,9 @@ def run_train(iter_index,
 
     train_cmd = "../main.py -t %d" % train_thread
     train_cmd += cmdl_args
-    train_cmd = cmd_append_log(train_cmd, "train.log")
+    train_cmd = cmd_append_log(train_cmd, "train.log", env=cmd_env)
     freez_cmd = "../freeze.py -o graph.pb"
-    freez_cmd = cmd_append_log(freez_cmd, "freeze.log")
+    freez_cmd = cmd_append_log(freez_cmd, "freeze.log", env=cmd_env)
     task_dirs = [("%03d" % ii) for ii in range(numb_model)]
 
     batch_jobs = jdata['batch_jobs']
