@@ -20,7 +20,7 @@ def read_sits_dat(filename="sits_enerd.dat"):
 
 def compute_log_reweight(E_enh, beta_0, log_nk_i, beta_k_i, log_nk_j=None, beta_k_j=None):
     beta_0k_i = beta_0 - beta_k_i
-    log_gf_i = beta_0k_i * E_enh + log_nk_i
+    log_gf_i = beta_0k_i * E_enh.reshape(-1, 1) + log_nk_i
     log_gf_i -= log_gf_i.mean()
     gfsum_i = np.exp(log_gf_i).sum(axis=1)
 
