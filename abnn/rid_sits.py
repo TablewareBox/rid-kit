@@ -60,6 +60,8 @@ def make_enhc(iter_index,
     fp = open(json_file, 'r')
     jdata = json.load(fp)
     sits_param = jdata.get("sits_settings", None)
+    if sits_param is not None:
+        sits_param["nst-sits-enerd-out"] = jdata["bias_frame_freq"]
     
     numb_walkers = jdata["numb_walkers"] if not sits_iter else 1
     template_dir = jdata["template_dir"]

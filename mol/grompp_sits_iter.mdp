@@ -164,6 +164,7 @@ sits-enhance-mode        = PP_AND_PW
 sits-t-numbers           = 31
 nstsitsrecord            = 1
 nstsitsupdate            = 400
+nst-sits-enerd-out       = 500
 sits-t-low               = 300
 sits-t-high              = 600
 niter                    = 10000000

@@ -119,6 +119,7 @@ def make_grompp_sits(gro_file, sits_data, sits_iter=False, iter_index=0):
     replace(gro_file, "sits-t-numbers.*=.*", "sits-t-numbers = %d" % sits_data["sits-t-numbers"])
     replace(gro_file, "nstsitsrecord.*=.*", "nstsitsrecord = %d" % sits_data["nstsitsrecord"])
     replace(gro_file, "nstsitsupdate.*=.*", "nstsitsupdate = %d" % sits_data["nstsitsupdate"])
+    replace(gro_file, "nst-sits-enerd-out.*=.*", "nst-sits-enerd-out = %d" % sits_data["nst-sits-enerd-out"])
     replace(gro_file, "sits-t-low.*=.*", "sits-t-low = %.2f" % sits_data["sits-t-low"])
     replace(gro_file, "sits-t-high.*=.*", "sits-t-high = %.2f" % sits_data["sits-t-high"])
     replace(gro_file, "sits-energy-shift.*=.*", "sits-energy-shift = %.2f" % sits_data["sits-energy-shift"])
@@ -181,6 +182,8 @@ def make_res(iter_index,
     fp = open(json_file, 'r')
     jdata = json.load(fp)
     sits_param = jdata.get("sits_settings", None)
+    if sits_param is not None:
+        sits_param["nst-sits-enerd-out"] = jdata["res_frame_freq"]
     numb_walkers = jdata["numb_walkers"]
     template_dir = jdata["template_dir"]
     bias_nsteps = jdata["bias_nsteps"]
@@ -424,6 +427,7 @@ def post_res(iter_index,
              data_name="data"):
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    sits_param = jdata.get("sits_settings", None)
     res_cmpf_error = jdata["res_cmpf_error"]
 
     iter_name = make_iter_name(iter_index)
@@ -435,10 +439,14 @@ def post_res(iter_index,
         np.savetxt(res_path + data_name + '.raw', [], fmt="%.6e")
         return
     all_task.sort()
-    if res_cmpf_error:
-        cmpf_cmd = "./cmpf.sh"
+    if sits_param is not None:
+        sits_iter_name = "sits"
+        cmpf_cmd = "python cmpf_wtij.py -d %s -i %s" % (base_path, sits_iter_name)
     else:
-        cmpf_cmd = "./cmpf.py"
+        if res_cmpf_error:
+            cmpf_cmd = "bash cmpf.sh"
+        else:
+            cmpf_cmd = "python cmpf.py"
     cmpf_log = "cmpf.log"
     cmpf_cmd = cmd_append_log(cmpf_cmd, cmpf_log)
 
@@ -497,7 +505,7 @@ def make_train_eff(sits_iter_index, json_file):
                 np.savetxt(res_path + data_name + '.raw', [], fmt="%.6e")
                 return
             all_task.sort()
-            cmpf_cmd = "./cmpf_wtij.py -i %s -j %s" % (sits_iter_name, sits_iterj_name)
+            cmpf_cmd = "python cmpf_wtij.py -d %s -i %s -j %s" % (join(base_path, "sits"), sits_iter_name, sits_iterj_name)
             cmpf_log = "cmpf.log"
             cmpf_cmd = cmd_append_log(cmpf_cmd, cmpf_log)
 

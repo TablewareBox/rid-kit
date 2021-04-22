@@ -68,7 +68,7 @@ def make_slurm_script_group (cmd,
     ret = ""
     ret += "#!/bin/bash -l\n"
     ret += "#SBATCH -N 1\n"
-    ret += "#SBATCH -n 1\n"
+    ret += "#SBATCH -n %d\n" % work_thread
     #ret += "#SBATCH --exclude=gpu[01-07,12-13]\n"
     #ret += "#SBATCH --exclude=gpu[01,03,05,06,08-13]\n"
     ret += "#SBATCH --partition=all\n"
