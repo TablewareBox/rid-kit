@@ -9,8 +9,13 @@ import os
 
 def read_sits_dat(filename="sits_enerd.dat"):
     df_sits = pd.read_csv(filename, header=None, delim_whitespace=True)
-    df_sits.columns = ["step", "E_pp", "E_pw", "E_ww",
-                       "E_enh", "E_eff", "reweight", "factor"]
+    if df_sits.shape[1] == 7:
+        df_sits.columns = ["E_pp", "E_pw", "E_ww",
+                           "E_enh", "E_eff", "reweight", "factor"]
+    elif df_sits.shape[1] == 8:
+        df_sits.columns = ["step", "E_pp", "E_pw", "E_ww",
+                           "E_enh", "E_eff", "reweight", "factor"]
+
     return df_sits
 
 def compute_log_reweight(E_enh, beta_0, log_nk_i, beta_k_i, log_nk_j=None, beta_k_j=None):
@@ -21,7 +26,7 @@ def compute_log_reweight(E_enh, beta_0, log_nk_i, beta_k_i, log_nk_j=None, beta_
 
     if log_nk_j is not None:
         beta_0k_j = beta_0 - beta_k_j
-        log_gf_j = beta_0k_j * E_enh + log_nk_j
+        log_gf_j = beta_0k_j * E_enh.reshape(-1, 1) + log_nk_j
         log_gf_j -= log_gf_j.mean()
         gfsum_j = np.exp(log_gf_j).sum(axis=1)
         return gfsum_j / gfsum_i
@@ -49,7 +54,7 @@ if __name__ == "__main__":
     E = np.array(read_sits_dat("sits_enerd.dat")['E_enh'])
     log_nk_i = np.loadtxt(os.path.join(P.jobdir, P.idir, "log_nk.dat"))
     beta_k_i = np.loadtxt(os.path.join(P.jobdir, P.idir, "beta_k.dat"))
-    beta_0 = np.loadtxt(os.path.join(P.jobdir, "beta_0.dat"))[0]
+    beta_0 = float(np.loadtxt(os.path.join(P.jobdir, "beta_0.dat")))
     if P.jdir is not None:
         log_nk_j = np.loadtxt(os.path.join(P.jobdir, P.jdir, "log_nk.dat"))
         beta_k_j = np.loadtxt(os.path.join(P.jobdir, P.jdir, "beta_k.dat"))

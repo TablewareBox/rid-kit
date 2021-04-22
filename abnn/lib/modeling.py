@@ -441,7 +441,7 @@ def post_res(iter_index,
     all_task.sort()
     if sits_param is not None:
         sits_iter_name = "sits"
-        cmpf_cmd = "python cmpf_wtij.py -d %s -i %s" % (base_path, sits_iter_name)
+        cmpf_cmd = "python cmpf_wtij.py -d %s -i %s" % (join(base_path, "sits"), ".")
     else:
         if res_cmpf_error:
             cmpf_cmd = "bash cmpf.sh"
@@ -505,7 +505,7 @@ def make_train_eff(sits_iter_index, json_file):
                 np.savetxt(res_path + data_name + '.raw', [], fmt="%.6e")
                 return
             all_task.sort()
-            cmpf_cmd = "python cmpf_wtij.py -d %s -i %s -j %s" % (join(base_path, "sits"), sits_iter_name, sits_iterj_name)
+            cmpf_cmd = "python cmpf_wtij.py -d %s -i %s -j %s" % (join(base_path, "sits"), make_iter_name(sits_iter_index), make_iter_name(j))
             cmpf_log = "cmpf.log"
             cmpf_cmd = cmd_append_log(cmpf_cmd, cmpf_log)
 
