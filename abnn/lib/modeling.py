@@ -307,6 +307,8 @@ def make_res(iter_index,
                     shutil.copyfile(join("sits", "log_nk.dat"), join(work_path, "log_nk.dat"))
                 if os.path.exists(join("sits", "log_norm.dat")):
                     shutil.copyfile(join("sits", "log_norm.dat"), join(work_path, "log_norm.dat"))
+                mol_conf_file = join(work_path, "grompp_sits.mdp")
+                make_grompp_sits(mol_conf_file, sits_param, sits_iter=False, iter_index=iter_index)
             conf_file = walker_path + enhc_out_conf + \
                 ("conf%d.gro" % sel_idx[ii])
             if os.path.exists(work_path + "conf.gro"):

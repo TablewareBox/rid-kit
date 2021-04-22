@@ -444,7 +444,8 @@ def run_iter(json_file, init_model):
         if ii % niter_per_sits == 0:
             kk = int(ii / niter_per_sits)
             log_iter("run_sits_iter", kk, 0)
-            create_path(join("sits", make_iter_name(kk)))
+            if not os.path.exists(join("sits", make_iter_name(kk))):
+                create_path(join("sits", make_iter_name(kk)))
             if kk > 0:
                 open(join("sits", make_iter_name(kk-1), "rid_iter_end.dat"), "w+").write("%d" % ii)
             open(join("sits", make_iter_name(kk), "rid_iter_begin.dat"), "w+").write("%d" % ii)
