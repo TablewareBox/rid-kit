@@ -221,14 +221,12 @@ def make_res(iter_index,
 
         graph_files = glob.glob("*.pb")
         if len(graph_files) != 0:
-            os.chdir(walker_path)
             sel_cmd = "python3 test.std.py -m *.pb -t %f -d %s --output sel.out --output-angle sel.angle.out" % (
                 sel_threshold, enhc_out_angle)
             sel_cmd = cmd_append_log(sel_cmd, "sel.log", env=cmd_env)
             log_task("select with threshold %f" % sel_threshold)
             log_task(sel_cmd)
             sp.check_call(sel_cmd, shell=True)
-            os.chdir(base_path)
             sel_idx = []
             sel_angles = np.array([])
             with open("sel.out") as fp:
