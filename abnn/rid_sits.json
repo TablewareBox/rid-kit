@@ -73,6 +73,7 @@
     "batch_time_limit": "24:0:0",
     "batch_modules":    [
         "#SBATCH --exclude=gpu13",
+        "#SBATCH --partition GPURTX",
         "source ~/env/gmx_2020.2_sits-bias.env"
     ],
     "batch_sources":    [

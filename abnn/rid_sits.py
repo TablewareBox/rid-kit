@@ -360,8 +360,8 @@ def post_sits_iter(sits_iter_index, json_file):
     sp.check_call(cmd_save_sits, shell=True)
 
 
-def run_train_eff(sits_iter_index, json_file):
-    run_train(sits_iter_index, json_file, data_name="data%03d" % sits_iter_index, sits_iter=True)
+def run_train_eff(sits_iter_index, json_file, exec_machine=MachineLocal):
+    run_train(sits_iter_index, json_file, exec_machine=exec_machine, data_name="data%03d" % (sits_iter_index + 1), sits_iter=True)
 
 def post_train_eff(sits_iter_index, json_file):
     # copy trained model in sits_train_path to last rid iter (prev_*)
@@ -401,13 +401,17 @@ def post_train_eff(sits_iter_index, json_file):
                 # shutil.copy (ii, old_model_path)
             os.chdir(base_path)
             for mfile in model_files:
+                if os.path.exists(join(prev_work_path, mfile)):
+                    os.rename(join(prev_work_path, mfile), join(prev_work_path, mfile) + ".%03d" % sits_iter_index)
                 shutil.copy(mfile, prev_work_path)
 
             prev_models = glob.glob(join(prev_train_path, "*.pb"))
             models = glob.glob(join(train_path, "*.pb"))
             for mfile in models:
                 model_name = os.path.basename(mfile)
-                os.symlink(mfile, join(prev_train_path, model_name))
+                if os.path.exists(join(prev_train_path, model_name)):
+                    os.rename(join(prev_train_path, model_name), join(prev_train_path, model_name) + ".%03d" % sits_iter_index)
+                os.symlink(os.path.abspath(mfile), os.path.abspath(join(prev_train_path, model_name)))
 
 
 def run_iter(json_file, init_model):
@@ -442,7 +446,7 @@ def run_iter(json_file, init_model):
     if sits_iter_rec == [0, -1]:
         create_path("sits")
     data_name = "data"
-    for ii in range(numb_iter):
+    for ii in range(iter_rec[0], numb_iter):
         if ii > 0:
             prev_model = glob.glob(make_iter_name(ii-1) + "/" + train_name + "/*pb")
         if ii % niter_per_sits == 0:
@@ -453,7 +457,7 @@ def run_iter(json_file, init_model):
             if kk > 0:
                 open(join("sits", make_iter_name(kk-1), "rid_iter_end.dat"), "w+").write("%d" % ii)
             open(join("sits", make_iter_name(kk), "rid_iter_begin.dat"), "w+").write("%d" % ii)
-            for jj in range(6):
+            for jj in range(sits_iter_rec[1], 6):
                 if kk * max_tasks + jj <= sits_iter_rec[0] * max_tasks + sits_iter_rec[1]:
                     continue
                 if jj == 0:

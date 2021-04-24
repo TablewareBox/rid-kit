@@ -549,15 +549,8 @@ def make_train_eff(sits_iter_index, json_file):
         data_old_file = join(data_path, data_name + ".old.raw")
         data_new_file = join(data_path, data_name + ".new.raw")
         base_path = os.getcwd() + "/"
-        templ_train_path = join(template_dir, train_name)
 
-        create_path(train_path)
         os.makedirs(data_path)
-        copy_file_list(train_files, templ_train_path, train_path)
-        replace(join(train_path, "model.py"), "\./data", "./" + data_dir)
-        replace(join(train_path, "model.py"), "data\.", data_name + ".")
-        replace(join(train_path, "main.py"), "\./data", "./" + data_dir)
-        replace(join(train_path, "main.py"), "data\.raw", data_name + ".raw")
 
         # collect data
         log_task("collect data upto %d" % (iter_index))
@@ -587,12 +580,19 @@ def make_train_eff(sits_iter_index, json_file):
         train_path = join(sits_iter_name, train_name)
         data_path = join(train_path, data_dir)
 
+        templ_train_path = join(template_dir, train_name)
+
         data_file_sits = join(data_path, data_name + ".raw")
         # create train dirs
         log_task("create train dirs")
         create_path(train_path)
         create_path(data_path)
         shutil.copy(data_file, data_file_sits)
+        copy_file_list(train_files, templ_train_path, train_path)
+        replace(join(train_path, "model.py"), "\./data", "./" + data_dir)
+        replace(join(train_path, "model.py"), "data\.", data_name + ".")
+        replace(join(train_path, "main.py"), "\./data", "./" + data_dir)
+        replace(join(train_path, "main.py"), "data\.raw", data_name + ".raw")
     for ii in range(numb_model):
         work_path = join(train_path, ("%03d" % ii))
         old_model_path = join(work_path, "old_model")
@@ -626,7 +626,7 @@ def clean_res(iter_index):
     all_task = glob.glob(res_path + "/[0-9]*[0-9]")
     all_task.sort()
 
-    cleaned_files = ['cmpf*', '*log', 'general_mkres.sh', 'plm.res.out', 'state*.cpt', 'traj_comp.xtc',
+    cleaned_files = ['*log', 'general_mkres.sh', 'state*.cpt', 'traj_comp.xtc',
                      'topol.tpr', 'tools', 'confout.gro', 'ener.edr', 'mdout.mdp', 'plumed.res.templ']
     cwd = os.getcwd()
     for ii in all_task:
@@ -740,7 +740,8 @@ def run_train(iter_index,
 
     # check if new data is empty
     new_data_file = os.path.join(train_path, data_dir, data_name + '.new.raw')
-    if (os.stat(new_data_file).st_size == 0) & (not sits_iter):
+    filesize = os.stat(new_data_file).st_size if os.path.exists(new_data_file) else 0
+    if (filesize == 0) & (not sits_iter):
         prev_iter_index = iter_index - 1
         prev_train_path = join(base_path, make_iter_name(prev_iter_index), train_name) + "/"
         prev_models = glob.glob( join(prev_train_path, "*.pb") )
