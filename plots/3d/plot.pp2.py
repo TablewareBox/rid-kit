@@ -7,7 +7,7 @@ import argparse
 import numpy as np
 import tensorflow as tf
 
-kbT = (8.617343E-5) * 300
+kbT = 8.617343E-5 * 298
 beta = 1.0 / kbT
 f_cvt = 96.485
 
@@ -61,7 +61,7 @@ def test_e(sess, xx):
     inputs = graph.get_tensor_by_name('load/inputs:0')
     o_energy = graph.get_tensor_by_name('load/o_energy:0')
 
-    zero4 = np.zeros([xx.shape[0], 4])
+    zero4 = np.zeros([xx.shape[0], 3])
     data_inputs = np.concatenate((xx, zero4), axis=1)
     feed_dict_test = {inputs: data_inputs}
 
@@ -69,112 +69,79 @@ def test_e(sess, xx):
     return data_ret[0]
 
 
-def value_array_pp(sess, ngrid):
+def value_array_12(sess, ngrid):
     xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
     yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
     delta = 2.0 * np.pi / ngrid
     delta2 = delta * delta
     zz = np.zeros([len(xx) * len(yy)])
 
-    my_grid = np.zeros((ngrid * ngrid, 2))
-    zero_grid = np.zeros((ngrid * ngrid, 1))
+    my_grid = np.zeros((ngrid, 1))
+    zero_grid = np.zeros((ngrid, 1))
     for i in range(ngrid):
-        for j in range(ngrid):
-            my_grid[i * ngrid + j, 0] = i * delta - np.pi
-            my_grid[i * ngrid + j, 1] = j * delta - np.pi
-
-    for i in range(len(xx)):
-        print("computing grid: %d" % i)
-        for j in range(len(yy)):
-            ve = test_e(sess, np.concatenate((zero_grid + xx[i], zero_grid + yy[j], my_grid), axis=1))
-            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta2 * np.exp(-beta * ve)))
-
-    zz = zz - np.max(zz)
-    return xx, yy, zz
-
-
-def value_array_x(sess, ngrid):
-    xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    delta = 2.0 * np.pi / ngrid
-    delta2 = delta * delta
-    zz = np.zeros([len(xx) * len(yy)])
-
-    my_grid = np.zeros((ngrid * ngrid, 2))
-    zero_grid = np.zeros((ngrid * ngrid, 1))
-    for i in range(ngrid):
-        for j in range(ngrid):
-            my_grid[i * ngrid + j, 0] = i * delta - np.pi
-            my_grid[i * ngrid + j, 1] = j * delta - np.pi
-
-    for i in range(len(xx)):
-        print("computing grid: %d" % i)
-        for j in range(len(yy)):
-            ve = test_e(sess, np.concatenate((np.reshape(my_grid[:, 0], [-1, 1]), zero_grid + xx[i], zero_grid + yy[j],
-                                              np.reshape(my_grid[:, 1], [-1, 1])), axis=1))
-            # ve = test_e (sess, np.concatenate((zero_grid + xx[i], np.reshape(my_grid[:,0], [-1,1]), np.reshape(my_grid[:,1], [-1,1]), zero_grid + yy[j]), axis = 1))
-            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta2 * np.exp(-beta * ve)))
-
-    zz = zz - np.max(zz)
-    return xx, yy, zz
-
-
-def value_array_x1(sess, ngrid):
-    xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    delta = 2.0 * np.pi / ngrid
-    delta2 = delta * delta
-    zz = np.zeros([len(xx) * len(yy)])
-
-    my_grid = np.zeros((ngrid * ngrid, 2))
-    zero_grid = np.zeros((ngrid * ngrid, 1))
-    for i in range(ngrid):
-        for j in range(ngrid):
-            my_grid[i * ngrid + j, 0] = i * delta - np.pi
-            my_grid[i * ngrid + j, 1] = j * delta - np.pi
-
-    for i in range(len(xx)):
-        print("computing grid: %d" % i)
-        for j in range(len(yy)):
-            ve = test_e(sess, np.concatenate((zero_grid + xx[i], np.reshape(my_grid[:, 0], [-1, 1]), zero_grid + yy[j],
-                                              np.reshape(my_grid[:, 1], [-1, 1])), axis=1))
-            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta2 * np.exp(-beta * ve)))
-
-    zz = zz - np.max(zz)
-    return xx, yy, zz
-
-
-def value_array_tz(sess, ngrid):
-    xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    delta = 2.0 * np.pi / ngrid
-    delta2 = delta * delta
-    zz = np.zeros([len(xx) * len(yy)])
-
-    my_grid = np.zeros((ngrid * ngrid, 2))
-    zero_grid = np.zeros((ngrid * ngrid, 1))
-    for i in range(ngrid):
-        for j in range(ngrid):
-            my_grid[i * ngrid + j, 0] = i * delta - np.pi
-            my_grid[i * ngrid + j, 1] = j * delta - np.pi
+        my_grid[i] = i * delta - np.pi
 
     for i in range(len(xx)):
         print("computing grid: %d" % i)
         for j in range(len(yy)):
             ve = test_e(sess, np.concatenate((my_grid, zero_grid + xx[i], zero_grid + yy[j]), axis=1))
-            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta2 * np.exp(-beta * ve)))
+            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta * np.exp(-beta * ve)))
 
     zz = zz - np.max(zz)
     return xx, yy, zz
 
 
-def print_array(fname, xx, yy, zz0, zz1, zz2, zz3):
+def value_array_01(sess, ngrid):
+    xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
+    yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
+    delta = 2.0 * np.pi / ngrid
+    delta2 = delta * delta
+    zz = np.zeros([len(xx) * len(yy)])
+
+    my_grid = np.zeros((ngrid, 1))
+    zero_grid = np.zeros((ngrid, 1))
+    for i in range(ngrid):
+        my_grid[i] = i * delta - np.pi
+
+    for i in range(len(xx)):
+        print("computing grid: %d" % i)
+        for j in range(len(yy)):
+            ve = test_e(sess, np.concatenate((zero_grid + xx[i], zero_grid + yy[j], my_grid), axis=1))
+            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta * np.exp(-beta * ve)))
+
+    zz = zz - np.max(zz)
+    return xx, yy, zz
+
+
+def value_array_02(sess, ngrid):
+    xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
+    yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
+    delta = 2.0 * np.pi / ngrid
+    delta2 = delta * delta
+    zz = np.zeros([len(xx) * len(yy)])
+
+    my_grid = np.zeros((ngrid, 1))
+    zero_grid = np.zeros((ngrid, 1))
+    for i in range(ngrid):
+        my_grid[i] = i * delta - np.pi
+
+    for i in range(len(xx)):
+        print("computing grid: %d" % i)
+        for j in range(len(yy)):
+            ve = test_e(sess, np.concatenate((zero_grid + xx[i], my_grid, zero_grid + yy[j]), axis=1))
+            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta * np.exp(-beta * ve)))
+
+    zz = zz - np.max(zz)
+    return xx, yy, zz
+
+
+def print_array(fname, xx, yy, zz0, zz1, zz2):
     with open(fname, 'w') as fp:
         lx = len(xx)
         for ii in range(len(xx)):
             for jj in range(len(yy)):
-                fp.write("%f %f %f %f %f %f\n" % (
-                xx[ii], yy[jj], zz0[ii * lx + jj], zz1[ii * lx + jj], zz2[ii * lx + jj], zz3[ii * lx + jj]))
+                fp.write(
+                    "%f %f %f %f %f \n" % (xx[ii], yy[jj], zz0[ii * lx + jj], zz1[ii * lx + jj], zz2[ii * lx + jj]))
             fp.write("\n")
 
 
@@ -192,35 +159,35 @@ def _main():
     for ii in args.model:
         graph = load_graph(ii)
         with tf.Session(graph=graph) as sess:
-            xx, yy, zz0 = value_array_pp(sess, args.numb_grid)
-            xx, yy, zz1 = value_array_tz(sess, args.numb_grid)
-            xx, yy, zz2 = value_array_x(sess, args.numb_grid)
-            xx, yy, zz3 = value_array_x1(sess, args.numb_grid)
+            xx, yy, zz0 = value_array_12(sess, args.numb_grid)
+            xx, yy, zz1 = value_array_01(sess, args.numb_grid)
+            xx, yy, zz2 = value_array_02(sess, args.numb_grid)
+            # xx, yy, zz3 = value_array_x1 (sess, args.numb_grid)
             zz0 *= f_cvt
             zz1 *= f_cvt
             zz2 *= f_cvt
-            zz3 *= f_cvt
+            # zz3 *= f_cvt
             if count == 0:
                 avg0 = zz0
                 avg1 = zz1
                 avg2 = zz2
-                avg3 = zz3
+                # avg3 = zz3
             else:
                 avg0 += zz0
                 avg1 += zz1
                 avg2 += zz2
-                avg3 += zz3
+                # avg3 += zz3
         count += 1
     avg0 /= float(count)
     avg1 /= float(count)
     avg2 /= float(count)
-    avg3 /= float(count)
+    # avg3 /= float(count)
 
     avg0 -= np.max(avg0)
     avg1 -= np.max(avg1)
     avg2 -= np.max(avg2)
-    avg3 -= np.max(avg2)
-    print_array(args.output, xx, yy, avg0, avg1, avg2, avg3)
+    # avg3 -= np.max(avg2)
+    print_array(args.output, xx, yy, avg0, avg1, avg2)
 
 
 if __name__ == '__main__':
