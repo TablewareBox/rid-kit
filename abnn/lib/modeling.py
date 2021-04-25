@@ -800,7 +800,9 @@ def run_train(iter_index,
             exec_hosts_batch(exec_machine, train_cmd,
                              train_thread, task_dirs, None)
 
-    exec_hosts(MachineLocal, freez_cmd, 1, task_dirs, None)
+    # exec_hosts(MachineLocal, freez_cmd, 1, task_dirs, None)
+    for task_dir in task_dirs:
+        exec_hosts(MachineLocal, freez_cmd, 1, [task_dir], None)
     for ii in range(numb_model):
         os.symlink("%03d/graph.pb" % ii, "graph.%03d.pb" % ii)
     os.chdir(base_path)

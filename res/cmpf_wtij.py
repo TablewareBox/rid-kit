@@ -101,7 +101,7 @@ if __name__ == "__main__":
     if P.jdir is None:
         np.savetxt('force_000.out', np.reshape(ff_wt, [1, -1]), fmt='%.10e')
         np.savetxt('force.out', np.reshape(ff, [1, -1]), fmt='%.10e')
-        np.savetxt('force_%03d.out' % int(P.idir[-3:])+1, np.reshape(ff, [1, -1]), fmt='%.10e')
+        np.savetxt('force_001.out', np.reshape(ff, [1, -1]), fmt='%.10e')
     else:
         np.savetxt('force.out', np.reshape(ff_wt, [1, -1]), fmt='%.10e')
-        np.savetxt('force_%03d.out' % int(P.idir[-3:])+1, np.reshape(ff_wt, [1, -1]), fmt='%.10e')
+        np.savetxt('force_%03d.out' % (int(P.idir[-3:])+1), np.reshape(ff_wt, [1, -1]), fmt='%.10e')
