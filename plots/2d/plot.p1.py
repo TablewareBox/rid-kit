@@ -97,7 +97,6 @@ def value_array_phi(sess, ngrid):
         my_grid[i] = xx[i]
 
     for i in range(len(xx)):
-        print("computing grid: %d" % i)
         ve = test_e(sess, np.concatenate((zero_grid[:, None] + xx[i], my_grid[:, None]), axis=1))
         zz[i] = kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
 
@@ -118,13 +117,37 @@ def value_array_psi(sess, ngrid):
         my_grid[i] = yy[i]
 
     for i in range(len(yy)):
-        print("computing grid: %d" % i)
         ve = test_e(sess, np.concatenate((my_grid[:, None], zero_grid[:, None] + yy[i]), axis=1))
         zz[i] = kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
 
     zz = zz - np.max(zz)
 
     return yy, zz
+
+
+def value_array_phipsi(sess, ngrid):
+    xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
+    yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
+    xg, yg = np.meshgrid(xx, yy)
+    delta = 2.0 * np.pi / ngrid
+    zz0 = np.zeros([len(yy)])
+    zz1 = np.zeros([len(yy)])
+
+    my_grid = np.zeros(ngrid + 1)
+    zero_grid = np.zeros(ngrid + 1)
+    for i in range(ngrid + 1):
+        my_grid[i] = yy[i]
+
+    ve = test_e(sess, np.concatenate((xg.reshape((-1, 1)), yg.reshape((-1, 1))), axis=1))
+    ve = ve.reshape((ngrid + 1, ngrid + 1))
+    ve -= np.min(ve)
+    zz0 = kbT * np.log(np.sum(delta * np.exp(-beta * ve), axis=0))
+    zz1 = kbT * np.log(np.sum(delta * np.exp(-beta * ve), axis=1))
+
+    zz0 -= np.max(zz0)
+    zz1 -= np.max(zz1)
+
+    return xx, zz0, zz1
 
 
 def print_array(fname, xx, zz0, zz1, sd0, sd1):
@@ -152,8 +175,7 @@ def _main():
     for ii in args.model:
         graph = load_graph(os.path.join(args.job_dir, ii))
         with tf.Session(graph=graph) as sess:
-            xx, zz0 = value_array_phi(sess, args.numb_grid)
-            xx, zz1 = value_array_psi(sess, args.numb_grid)
+            xx, zz0, zz1 = value_array_phipsi(sess, args.numb_grid)
             zz0 *= f_cvt
             zz1 *= f_cvt
             arr0.append(zz0)
@@ -161,8 +183,8 @@ def _main():
     avg0 = np.mean(arr0, axis=0)
     avg1 = np.mean(arr1, axis=0)
 
-    avg0 -= np.max(avg0)
-    avg1 -= np.max(avg1)
+    avg0 -= np.min(avg0)
+    avg1 -= np.min(avg1)
 
     sd0 = np.std(arr0, axis=0)
     sd1 = np.std(arr1, axis=0)
