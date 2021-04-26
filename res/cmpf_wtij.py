@@ -79,7 +79,7 @@ if __name__ == "__main__":
     start_f = int(nframes * (1 - tail))
     avgins = np.average(data[start_f:, :], axis=0)
     avgins_wt = np.average(
-        data[start_f:, :] * weights[start_f:, None], axis=0) / np.mean(weights)
+        data[start_f:, :] * weights[start_f:, None], axis=0) / np.mean(weights[start_f:])
 
     diff = np.zeros(avgins.shape)
     diff_wt = np.zeros(avgins_wt.shape)

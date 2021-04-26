@@ -98,9 +98,9 @@ def value_array_phi(sess, ngrid):
 
     for i in range(len(xx)):
         ve = test_e(sess, np.concatenate((zero_grid[:, None] + xx[i], my_grid[:, None]), axis=1))
-        zz[i] = kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
+        zz[i] = -kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
 
-    zz = zz - np.max(zz)
+    zz = zz - np.min(zz)
 
     return xx, zz
 
@@ -118,9 +118,9 @@ def value_array_psi(sess, ngrid):
 
     for i in range(len(yy)):
         ve = test_e(sess, np.concatenate((my_grid[:, None], zero_grid[:, None] + yy[i]), axis=1))
-        zz[i] = kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
+        zz[i] = -kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
 
-    zz = zz - np.max(zz)
+    zz = zz - np.min(zz)
 
     return yy, zz
 
@@ -141,11 +141,11 @@ def value_array_phipsi(sess, ngrid):
     ve = test_e(sess, np.concatenate((xg.reshape((-1, 1)), yg.reshape((-1, 1))), axis=1))
     ve = ve.reshape((ngrid + 1, ngrid + 1))
     ve -= np.min(ve)
-    zz0 = kbT * np.log(np.sum(delta * np.exp(-beta * ve), axis=0))
-    zz1 = kbT * np.log(np.sum(delta * np.exp(-beta * ve), axis=1))
+    zz0 = -kbT * np.log(np.sum(delta * np.exp(-beta * ve), axis=0))
+    zz1 = -kbT * np.log(np.sum(delta * np.exp(-beta * ve), axis=1))
 
-    zz0 -= np.max(zz0)
-    zz1 -= np.max(zz1)
+    zz0 -= np.min(zz0)
+    zz1 -= np.min(zz1)
 
     return xx, zz0, zz1
 

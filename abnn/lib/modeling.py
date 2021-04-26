@@ -835,6 +835,7 @@ def train_ori(iter_index,
     sits_param = jdata.get("sits_settings", None)
     res_cmpf_error = jdata["res_cmpf_error"]
 
+    train_ori_name = "03.train_ori"
     iter_name = make_iter_name(iter_index)
     res_path = iter_name + "/" + res_name + "/"
     base_path = os.getcwd() + "/"
@@ -852,7 +853,7 @@ def train_ori(iter_index,
         os.chdir(work_path)
         this_centers = np.loadtxt('centers.out')
         centers = np.append(centers, this_centers)
-        this_force = np.loadtxt('force000.out')
+        this_force = np.loadtxt('force_000.out')
         force = np.append(force, this_force)
         ndim = this_force.size
         assert (
@@ -874,7 +875,6 @@ def train_ori(iter_index,
 
     iter_name = make_iter_name(iter_index)
 
-    train_ori_name = "03.train_ori"
     train_path = join(iter_name, train_ori_name)
     data_path = join(train_path, data_dir)
 
@@ -903,7 +903,7 @@ def train_ori(iter_index,
         open(data_old_file, "w").close()
     else:
         prev_iter_index = iter_index - 1
-        prev_data_file = join(base_path, make_iter_name(prev_iter_index), train_name, data_dir, data_name + ".raw")
+        prev_data_file = join(base_path, make_iter_name(prev_iter_index), train_ori_name, data_dir, data_name + ".raw")
         this_raw = join(base_path, make_iter_name(iter_index), res_name, data_name + ".raw")
         os.chdir(data_path)
         os.symlink(os.path.relpath(prev_data_file),
@@ -928,7 +928,7 @@ def train_ori(iter_index,
         if iter_index >= 1:
             prev_iter_index = iter_index - 1
             prev_iter_name = make_iter_name(prev_iter_index)
-            prev_train_path = prev_iter_name + "/" + train_name + "/"
+            prev_train_path = prev_iter_name + "/" + train_ori_name + "/"
             prev_train_path = os.path.abspath(prev_train_path) + "/"
             prev_work_path = prev_train_path + ("%03d/" % ii)
             prev_model_files = glob.glob(join(prev_work_path, "model.ckpt.*")) + [join(prev_work_path, "checkpoint")]
@@ -951,7 +951,6 @@ def train_ori(iter_index,
     # if sits_param is not None:
     #     if sits_iter:
     #         iter_name = join("sits", make_iter_name(iter_index))
-    train_path = join(iter_name, train_name)
     base_path = os.getcwd() + "/"
 
     # check if new data is empty
@@ -959,7 +958,7 @@ def train_ori(iter_index,
     filesize = os.stat(new_data_file).st_size if os.path.exists(new_data_file) else 0
     if filesize == 0:
         prev_iter_index = iter_index - 1
-        prev_train_path = join(base_path, make_iter_name(prev_iter_index), train_name) + "/"
+        prev_train_path = join(base_path, make_iter_name(prev_iter_index), train_ori_name) + "/"
         prev_models = glob.glob( join(prev_train_path, "*.pb") )
         for ii in prev_models:
             model_name = os.path.basename(ii)

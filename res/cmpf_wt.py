@@ -7,8 +7,13 @@ import subprocess as sp
 
 def read_sits_dat(filename="sits_enerd.dat"):
     df_sits = pd.read_csv(filename, header=None, delim_whitespace=True)
-    df_sits.columns = ["step", "E_pp", "E_pw", "E_ww",
-                       "E_enh", "E_eff", "reweight", "factor"]
+    if df_sits.shape[1] == 7:
+        df_sits.columns = ["E_pp", "E_pw", "E_ww",
+                           "E_enh", "E_eff", "reweight", "factor"]
+    elif df_sits.shape[1] == 8:
+        df_sits.columns = ["step", "E_pp", "E_pw", "E_ww",
+                           "E_enh", "E_eff", "reweight", "factor"]
+
     return df_sits
 
 
@@ -39,7 +44,7 @@ for ii in range(1, nframes):
 start_f = int(nframes*(1-tail))
 avgins = np.average(data[start_f:, :], axis=0)
 avgins_wt = np.average(
-    data[start_f:, :] * weights[start_f:, None]) / np.sum(weights)
+    data[start_f:, :] * weights[start_f:, None], axis=0) / np.mean(weights[start_f:])
 
 diff = np.zeros(avgins.shape)
 diff_wt = np.zeros(avgins_wt.shape)

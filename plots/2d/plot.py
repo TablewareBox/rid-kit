@@ -99,9 +99,9 @@ def value_array_phi(sess, ngrid):
     for i in range(len(xx)):
         print("computing grid: %d" % i)
         ve = test_e(sess, np.concatenate((zero_grid[:, None] + xx[i], my_grid[:, None]), axis=1))
-        zz[i] = kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
+        zz[i] = -kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
 
-    zz = zz - np.max(zz)
+    zz = zz - np.min(zz)
 
     return xx, zz
 
@@ -120,9 +120,9 @@ def value_array_psi(sess, ngrid):
     for i in range(len(yy)):
         print("computing grid: %d" % i)
         ve = test_e(sess, np.concatenate((my_grid[:, None], zero_grid[:, None] + yy[i]), axis=1))
-        zz[i] = kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
+        zz[i] = -kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
 
-    zz = zz - np.max(zz)
+    zz = zz - np.min(zz)
 
     return yy, zz
 

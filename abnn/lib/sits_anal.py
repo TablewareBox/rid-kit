@@ -7,8 +7,13 @@ import subprocess as sp
 
 def read_sits_dat(filename="sits_enerd.dat"):
     df_sits = pd.read_csv(filename, header=None, delim_whitespace=True)
-    df_sits.columns = ["step", "E_pp", "E_pw", "E_ww",
-                       "E_enh", "E_eff", "reweight", "factor"]
+    if df_sits.shape[1] == 7:
+        df_sits.columns = ["E_pp", "E_pw", "E_ww",
+                           "E_enh", "E_eff", "reweight", "factor"]
+    elif df_sits.shape[1] == 8:
+        df_sits.columns = ["step", "E_pp", "E_pw", "E_ww",
+                           "E_enh", "E_eff", "reweight", "factor"]
+
     return df_sits
 
 def compute_log_reweight(E_enh, beta_0, log_nk_i, beta_k_i, log_nk_j=None, beta_k_j=None):
