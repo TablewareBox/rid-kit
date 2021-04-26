@@ -85,102 +85,46 @@ def value_array_pp_0(sess, ngrid):
     return xx, yy, zz
 
 
-def value_array_pp(sess, ngrid):
+def value_array_phi(sess, ngrid):
     xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
     yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
     delta = 2.0 * np.pi / ngrid
-    delta2 = delta * delta
-    zz = np.zeros([len(xx) * len(yy)])
+    zz = np.zeros([len(xx)])
 
-    my_grid = np.zeros((ngrid * ngrid, 2))
-    zero_grid = np.zeros((ngrid * ngrid, 1))
-    for i in range(ngrid):
-        for j in range(ngrid):
-            my_grid[i * ngrid + j, 0] = i * delta - np.pi
-            my_grid[i * ngrid + j, 1] = j * delta - np.pi
+    my_grid = np.zeros(ngrid + 1)
+    zero_grid = np.zeros(ngrid + 1)
+    for i in range(ngrid + 1):
+        my_grid[i] = xx[i]
 
     for i in range(len(xx)):
         print("computing grid: %d" % i)
-        for j in range(len(yy)):
-            ve = test_e(sess, np.concatenate((zero_grid + xx[i], zero_grid + yy[j], my_grid), axis=1))
-            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta2 * np.exp(-beta * ve)))
+        ve = test_e(sess, np.concatenate((zero_grid[:, None] + xx[i], my_grid[:, None]), axis=1))
+        zz[i] = kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
 
     zz = zz - np.max(zz)
-    return xx, yy, zz
+
+    return xx, zz
 
 
-def value_array_pt(sess, ngrid):
+def value_array_psi(sess, ngrid):
     xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
     yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
     delta = 2.0 * np.pi / ngrid
-    delta2 = delta * delta
-    zz = np.zeros([len(xx) * len(yy)])
+    zz = np.zeros([len(yy)])
 
-    my_grid = np.zeros((ngrid * ngrid, 2))
-    zero_grid = np.zeros((ngrid * ngrid, 1))
-    for i in range(ngrid):
-        for j in range(ngrid):
-            my_grid[i * ngrid + j, 0] = i * delta - np.pi
-            my_grid[i * ngrid + j, 1] = j * delta - np.pi
+    my_grid = np.zeros(ngrid + 1)
+    zero_grid = np.zeros(ngrid + 1)
+    for i in range(ngrid + 1):
+        my_grid[i] = yy[i]
 
-    for i in range(len(xx)):
+    for i in range(len(yy)):
         print("computing grid: %d" % i)
-        for j in range(len(yy)):
-            ve = test_e(sess, np.concatenate((zero_grid + xx[i], np.reshape(my_grid[:, 0], [-1, 1]), zero_grid + yy[j],
-                                              np.reshape(my_grid[:, 1], [-1, 1])), axis=1))
-            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta2 * np.exp(-beta * ve)))
+        ve = test_e(sess, np.concatenate((my_grid[:, None], zero_grid[:, None] + yy[i]), axis=1))
+        zz[i] = kbT * np.log(np.sum(delta * np.exp(-beta * ve)))
 
     zz = zz - np.max(zz)
-    return xx, yy, zz
 
-
-def value_array_tz(sess, ngrid):
-    xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    delta = 2.0 * np.pi / ngrid
-    delta2 = delta * delta
-    zz = np.zeros([len(xx) * len(yy)])
-
-    my_grid = np.zeros((ngrid * ngrid, 2))
-    zero_grid = np.zeros((ngrid * ngrid, 1))
-    for i in range(ngrid):
-        for j in range(ngrid):
-            my_grid[i * ngrid + j, 0] = i * delta - np.pi
-            my_grid[i * ngrid + j, 1] = j * delta - np.pi
-
-    for i in range(len(xx)):
-        print("computing grid: %d" % i)
-        for j in range(len(yy)):
-            ve = test_e(sess, np.concatenate((my_grid, zero_grid + xx[i], zero_grid + yy[j]), axis=1))
-            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta2 * np.exp(-beta * ve)))
-
-    zz = zz - np.max(zz)
-    return xx, yy, zz
-
-
-def value_array_pz(sess, ngrid):
-    xx = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    yy = np.linspace(-np.pi, np.pi, (ngrid + 1))
-    delta = 2.0 * np.pi / ngrid
-    delta2 = delta * delta
-    zz = np.zeros([len(xx) * len(yy)])
-
-    my_grid = np.zeros((ngrid * ngrid, 2))
-    zero_grid = np.zeros((ngrid * ngrid, 1))
-    for i in range(ngrid):
-        for j in range(ngrid):
-            my_grid[i * ngrid + j, 0] = i * delta - np.pi
-            my_grid[i * ngrid + j, 1] = j * delta - np.pi
-
-    for i in range(len(xx)):
-        print("computing grid: %d" % i)
-        for j in range(len(yy)):
-            ve = test_e(sess, np.concatenate((np.reshape(my_grid[:, 0], [-1, 1]), zero_grid + xx[i],
-                                              np.reshape(my_grid[:, 1], [-1, 1]), zero_grid + yy[j]), axis=1))
-            zz[i * (ngrid + 1) + j] = (kbT) * np.log(np.sum(delta2 * np.exp(-beta * ve)))
-
-    zz = zz - np.max(zz)
-    return xx, yy, zz
+    return yy, zz
 
 
 def print_array(fname, xx, yy, zz0):
@@ -207,34 +151,15 @@ def _main():
         graph = load_graph(ii)
         with tf.Session(graph=graph) as sess:
             xx, yy, zz0 = value_array_pp_0(sess, args.numb_grid)
-            # xx, yy, zz1 = value_array_tz (sess, args.numb_grid)
-            # xx, yy, zz2 = value_array_pt (sess, args.numb_grid)
-            # xx, yy, zz3 = value_array_pz (sess, args.numb_grid)
             zz0 *= f_cvt
-            # zz1 *= f_cvt
-            # zz2 *= f_cvt
-            # zz3 *= f_cvt
             if count == 0:
                 avg0 = zz0
-                # avg1 = zz1
-                # avg2 = zz2
-                # avg3 = zz3
             else:
                 avg0 += zz0
-                # avg1 += zz1
-                # avg2 += zz2
-                # avg3 += zz3
         count += 1
     avg0 /= float(count)
-    # avg1 /= float(count)
-    # avg2 /= float(count)
-    # avg3 /= float(count)
 
     avg0 -= np.max(avg0)
-    # avg1 -= np.max(avg1)
-    # avg2 -= np.max(avg2)
-    # avg3 -= np.max(avg3)
-    # print_array(args.output, xx, yy, avg0, avg1, avg2, avg3)
     print_array(args.output, xx, yy, avg0)
 
 

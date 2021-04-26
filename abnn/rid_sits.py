@@ -415,6 +415,7 @@ def post_train_eff(sits_iter_index, json_file):
 
 
 def run_iter(json_file, init_model):
+    base_dir = os.getcwd()
     prev_model = init_model
     fp = open(json_file, 'r')
     jdata = json.load(fp)
@@ -460,6 +461,7 @@ def run_iter(json_file, init_model):
             for jj in range(sits_iter_rec[1], 6):
                 if kk * max_tasks + jj <= sits_iter_rec[0] * max_tasks + sits_iter_rec[1]:
                     continue
+                os.chdir(base_dir)
                 if jj == 0:
                     make_sits_iter(kk, json_file, prev_model)
                 elif jj == 1:
@@ -481,6 +483,7 @@ def run_iter(json_file, init_model):
         for jj in range(numb_task):
             if ii * max_tasks + jj <= iter_rec[0] * max_tasks + iter_rec[1]:
                 continue
+            os.chdir(base_dir)
             if jj == 0:
                 log_iter("make_enhc", ii, jj)
                 # logging.info ("use prev model " + str(prev_model))
