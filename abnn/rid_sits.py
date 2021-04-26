@@ -444,6 +444,8 @@ def run_iter(json_file, init_model):
 
     global exec_machine
 
+    bPost_train = jdata.get("post_train")
+
     if sits_iter_rec == [0, -1]:
         create_path("sits")
     data_name = "data"
