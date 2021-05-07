@@ -140,19 +140,25 @@ def copy_file_list(file_list, from_path, to_path):
     for jj in file_list:
         file = join(from_path, jj)
         if os.path.isfile(file):
-            shutil.copy(file, to_path)
+            try:
+                shutil.copy(file, to_path)
+            except:
+                pass
         elif os.path.isdir(file):
-            cwd = os.getcwd()
-            os.chdir(file)
-            files = glob.glob("*")
-            os.chdir(cwd)
-            os.makedirs(join(to_path, jj))
-            for ff in files:
-                shutil.copy(join(file, ff), join(to_path, jj, ff))
-            #    print(from_path+jj+'/'+ff, to_path+jj+'/'+ff)
-            # if os.path.exists(to_path+jj) :
-            #     print('error!!!!!!!!!!!!!!!!')
-            # shutil.copytree (from_path + jj, to_path + jj)
+            try:
+                cwd = os.getcwd()
+                os.chdir(file)
+                files = glob.glob("*")
+                os.chdir(cwd)
+                os.makedirs(join(to_path, jj))
+                for ff in files:
+                    shutil.copy(join(file, ff), join(to_path, jj, ff))
+                #    print(from_path+jj+'/'+ff, to_path+jj+'/'+ff)
+                # if os.path.exists(to_path+jj) :
+                #     print('error!!!!!!!!!!!!!!!!')
+                # shutil.copytree (from_path + jj, to_path + jj)
+            except:
+                pass
 
 
 def create_path(path):
