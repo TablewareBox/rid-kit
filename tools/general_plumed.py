@@ -20,7 +20,7 @@ def make_general_angle_def(residue_atoms,
     dih_angles:         the definition of dihedral angles
     fmt_alpha:          the format of printing residue index
     fmt_angle:          the format of printing angle index
-    
+
     Returns:
     angle_names:        the dihedral angle names in format "resid_idx-angle_idx"
     angle_atom_idxes:   the atom indexs of each dihedral angle
@@ -58,9 +58,9 @@ def make_general_angle_def(residue_atoms,
                 #         mylist = str(kk)
                 #     else :
                 #         mylist += "," + str(kk)
-                # ret += ( (angle_print + ":") + " " + 
-                #          "TORSION " + 
-                #          "ATOMS=" + 
+                # ret += ( (angle_print + ":") + " " +
+                #          "TORSION " +
+                #          "ATOMS=" +
                 #          mylist + " " +
                 #          "\n")
     return angle_names, angle_atom_idxes
@@ -73,7 +73,7 @@ def make_general_dist_def(residues,
                           fmt_residue="%02d",
                           exclude=7):
     # print (residues)
-    # print (sel_residue_names)    
+    # print (sel_residue_names)
     sel_residue_idx = []
     sel_atom_idx = []
     for ii in range(len(residues)):
@@ -242,11 +242,27 @@ def cal_cv_dim(conf_file, cv_file):
         dist_atom = jdata["dist_atom"]
     if "dist_excl" in jdata:
         dist_excl = jdata["dist_excl"]
-
     angle_names, angle_atom_idxes = make_general_angle_def(residue_atoms, dih_angles, fmt_alpha, fmt_angle)
     dist_names, dist_atom_idxes = make_general_dist_def(residues, residue_atoms, hp_residues, dist_atom, fmt_alpha,
                                                         dist_excl)
-    return [len(angle_names), len(dist_names)]
+    if "selected_index" in jdata:
+        selected_index = jdata["selected_index"]
+        selected_angle_index = []
+        for ssi in selected_index:
+            if ssi == 0:
+                selected_angle_index.append(0)
+            elif ssi != 0:
+                selected_angle_index.append(ssi * 2 - 1)
+                selected_angle_index.append(ssi * 2)
+
+        newselected_angle_index = [i for i in selected_angle_index if i < len(angle_names)]
+        new_angle_names = [angle_names[i] for i in newselected_angle_index]
+        new_angle_atom_idxes = [angle_atom_idxes[i] for i in newselected_angle_index]
+    else:
+        new_angle_names = angle_names
+        new_angle_atom_idxes = angle_atom_idxes
+
+    return [len(new_angle_names), len(dist_names)]
 
 
 def general_plumed(TASK,
@@ -280,15 +296,32 @@ def general_plumed(TASK,
     dist_names, dist_atom_idxes = make_general_dist_def(residues, residue_atoms, hp_residues, dist_atom, fmt_alpha,
                                                         dist_excl)
 
+    if "selected_index" in jdata:
+        selected_index = jdata["selected_index"]
+        selected_angle_index = []
+        for ssi in selected_index:
+            if ssi == 0:
+                selected_angle_index.append(0)
+            elif ssi != 0:
+                selected_angle_index.append(ssi * 2 - 1)
+                selected_angle_index.append(ssi * 2)
+
+        newselected_angle_index = [i for i in selected_angle_index if i < len(angle_names)]
+        new_angle_names = [angle_names[i] for i in newselected_angle_index]
+        new_angle_atom_idxes = [angle_atom_idxes[i] for i in newselected_angle_index]
+    else:
+        new_angle_names = angle_names
+        new_angle_atom_idxes = angle_atom_idxes
+
     ret = ""
     if len(dist_names) > 0:
         ret += make_wholemolecules(protein_atom_idxes)
         ret += "\n"
-    ret += (make_angle_def(angle_names, angle_atom_idxes))
+    ret += (make_angle_def(new_angle_names, new_angle_atom_idxes))
     ret += (make_dist_def(dist_names, dist_atom_idxes))
     ret += "\n"
 
-    cv_names = angle_names + dist_names
+    cv_names = new_angle_names + dist_names
     if TASK == "res":
         ptr, ptr_names = make_restraint(cv_names, kappa, 0.0)
         ret += (ptr)
