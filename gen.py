@@ -513,7 +513,7 @@ def _main():
     # nalpha = jdata["nalpha"]
 
     base_path = os.path.dirname(os.path.realpath(__file__)) + "/"
-    mol_dir = base_path + args.MOL
+    mol_dir = args.MOL
     res_dir = base_path + "res"
     afed_dir = base_path + "afed"
     rid_dir = base_path + "abnn"
@@ -525,7 +525,7 @@ def _main():
     print("using gen def:      %s" % args.GEN_DEF)
     print("using cv  def:      %s" % args.CV_DEF)
     print("using mol dir:      %s" % mol_dir)
-    print("output to:          %s" % base_path + args.output)
+    print("output to:          %s" % args.output)
 
     if args.TASK == "bf":
         gen_bf(args.output, args.GEN_DEF, args.CV_DEF, mol_dir)

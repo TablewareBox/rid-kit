@@ -363,11 +363,12 @@ def main():
     parser.add_argument("-l", "--loop", default=loop, type=int, help="loop range", nargs="*")
 
     args = parser.parse_args()
-    job_dir = args.jobdir
+    job_dir = os.path.abspath(args.jobdir)
     files = args.mol
     loop = args.loop
     loop_res = list(range(loop[0], loop[1]+1))
 
+    os.makedirs(job_dir, exist_ok=True)
     os.chdir(job_dir)  # at R0949/
 
     for num, file in enumerate(files):
