@@ -13,7 +13,7 @@ from tools.general_plumed import cal_cv_dim
 from tools.general_plumed import general_plumed
 
 mol_dir_fmt = "mol/alan/%s/%02d"
-bf_file_copy = ["conf.gro", "grompp.mdp", "topol.top"]
+bf_file_copy = ["conf.gro", "grompp.mdp", "grompp_restraint.mdp", "topol.top", "posre.itp"]
 res_file_copy = ["clean.sh", "cmpf.sh", "cmpf.py",
                  "general_mkres.sh", "tools", "run.res.sh", "equi.mdp"]
 afed_file_copy = ["sel.angle.py"]

@@ -37,7 +37,7 @@ enhc_out_conf = "confs/"
 enhc_out_angle = "angle.rad.out"
 
 mol_name = "mol"
-mol_files = ["grompp.mdp", "grompp_sits.mdp", "grompp_sits_iter.mdp", "grompp_restraint.mdp", "grompp_sits_restraint.mdp", "grompp_sits_iter_restraint.mdp", "topol.top"]
+mol_files = ["grompp.mdp", "grompp_sits.mdp", "grompp_sits_iter.mdp", "grompp_restraint.mdp", "grompp_sits_restraint.mdp", "grompp_sits_iter_restraint.mdp", "topol.top", "posre.itp"]
 
 res_name = "01.resMD"
 res_files = ["cmpf.sh", "cmpf.py", "cmpf_wt.py", "cmpf_wtij.py", "general_mkres.sh", "plumed.res.templ", "tools"]
