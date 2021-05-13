@@ -279,7 +279,7 @@ def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1):
 
 
 def mk_rid(dirname, protein_name, job_dir, task="rid"):
-    mol_dir = os.path.join(ridkit_dir, 'mol/', protein_name)
+    mol_dir = os.path.join(job_dir, 'mol/', protein_name)
     # mol_dir='%s/rid-kit/mol/%s'+protein_dir
     print('mol_dir', mol_dir)
     print('protein_name', protein_name)
@@ -300,8 +300,8 @@ def mk_rid(dirname, protein_name, job_dir, task="rid"):
     os.system('cp posre.itp.templ %s/posre.itp' % (mol_dir))
     os.system('cp %s/mol/*.mdp %s' % (ridkit_dir, mol_dir))
     os.chdir(ridkit_dir)
-    os.system('python gen.py %s ./jsons/default_gen.json %s/phipsi_selected.json %s -o %s' %
-              (task, job_dir, os.path.join("./mol", protein_name), os.path.join(job_dir, "run06")))
+    os.system('python %s %s ./jsons/default_gen.json %s/phipsi_selected.json %s -o %s' %
+              (os.path.join(ridkit_dir, "gen.py"), task, job_dir, mol_dir, os.path.join(job_dir, "run06")))
     os.chdir(job_dir)
 
 
@@ -386,7 +386,7 @@ def main():
         os.chdir(job_dir)
     mk_posre(dirname, job_dir=job_dir, loop_res=loop_res)
     print(os.getcwd())
-    mk_rid(dirname=dirname, protein_name=protein_name, job_dir=job_dir)
+    mk_rid(dirname=dirname, protein_name=protein_name, job_dir=job_dir, task=args.TASK)
     os.chdir('..')
 
 
