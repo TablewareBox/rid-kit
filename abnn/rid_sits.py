@@ -59,6 +59,7 @@ def make_enhc(iter_index,
     graph_files.sort()
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    bPosre = jdata.get("gmx_posre", False)
     sits_param = jdata.get("sits_settings", None)
     if sits_param is not None:
         sits_param["nst-sits-enerd-out"] = jdata["bias_frame_freq"]
@@ -152,11 +153,15 @@ def make_enhc(iter_index,
             os.symlink(abs_path, walker_path + file_name)
         # config MD
         mol_conf_file = walker_path + "grompp.mdp"
+        if bPosre:
+            mol_conf_file = walker_path + "grompp_restraint.mdp"
         if sits_param is not None:
             if sits_iter:
                 mol_conf_file = walker_path + "grompp_sits_iter.mdp"
             else:
                 mol_conf_file = walker_path + "grompp_sits.mdp"
+            if bPosre:
+                gmx_prep = gmx_prep.replace(".mdp", "_restraint.mdp")
             make_grompp_sits(mol_conf_file, sits_param, sits_iter=sits_iter, iter_index=iter_index)
 
         make_grompp_enhc(mol_conf_file, nsteps, frame_freq)
@@ -198,6 +203,7 @@ def run_enhc(iter_index,
     jdata = json.load(fp)
     cmd_env = jdata.get("cmd_sources", [])
     sits_param = jdata.get("sits_settings", None)
+    bPosre = jdata.get("gmx_posre", False)
 
     iter_name = make_iter_name(iter_index)
     if sits_param is not None:
@@ -211,6 +217,10 @@ def run_enhc(iter_index,
             gmx_prep += " -f grompp_sits_iter.mdp"
         else:
             gmx_prep += " -f grompp_sits.mdp"
+        if bPosre:
+            gmx_prep = gmx_prep.replace(".mdp", "_restraint.mdp")
+    elif bPosre:
+        gmx_prep += " -f grompp_restraint.mdp"
     gmx_run = jdata["gmx_run"]
     enhc_thread = jdata["bias_thread"]
     gmx_run = gmx_run + (" -nt %d " % enhc_thread)

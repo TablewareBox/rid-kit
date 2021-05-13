@@ -193,6 +193,7 @@ def make_res(iter_index,
     sits_param = jdata.get("sits_settings", None)
     if sits_param is not None:
         sits_param["nst-sits-enerd-out"] = jdata["res_frame_freq"]
+    bPosre = jdata.get("gmx_posre", False)
     numb_walkers = jdata["numb_walkers"]
     template_dir = jdata["template_dir"]
     bias_nsteps = jdata["bias_nsteps"]
@@ -318,6 +319,8 @@ def make_res(iter_index,
                 if os.path.exists(join("sits", "log_norm.dat")):
                     shutil.copyfile(join("sits", "log_norm.dat"), join(work_path, "log_norm.dat"))
                 mol_conf_file = join(work_path, "grompp_sits.mdp")
+                if bPosre:
+                    mol_conf_file = join(work_path, "grompp_sits_restraint.mdp")
                 make_grompp_sits(mol_conf_file, sits_param, sits_iter=False, iter_index=iter_index)
             conf_file = walker_path + enhc_out_conf + \
                 ("conf%d.gro" % sel_idx[ii])
@@ -368,8 +371,12 @@ def run_res(iter_index,
     cmd_env = jdata.get("cmd_sources", [])
     sits_param = jdata.get("sits_settings", None)
     gmx_prep = jdata["gmx_prep"]
+    bPosre = jdata.get("gmx_posre", False)
     if sits_param is not None:
-        gmx_prep += " -f grompp_sits.mdp"
+        if not bPosre:
+            gmx_prep += " -f grompp_sits.mdp"
+        else:
+            gmx_prep += " -f grompp_sits_restraint.mdp"
     gmx_run = jdata["gmx_run"]
     res_thread = jdata["res_thread"]
     gmx_run = gmx_run + (" -nt %d " % res_thread)

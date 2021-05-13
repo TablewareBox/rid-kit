@@ -8,7 +8,7 @@
 ; e.g.: -I/home/joe/doe -I/home/mary/roe
 include                  = 
 ; e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)
-define                   = 
+define                   = -DPOSRES
 
 ; RUN CONTROL PARAMETERS
 integrator               = sd
@@ -162,16 +162,16 @@ rotation                 = no
 sits                     = yes
 sits-enhance-mode        = PP_AND_PW
 sits-t-numbers           = 31
-;nstsitsrecord            = 10
-;nstsitsupdate            = 5000
+nstsitsrecord            = 1
+nstsitsupdate            = 400
 nst-sits-enerd-out       = 500
 sits-t-low               = 300
 sits-t-high              = 600
-niter                    = 0
+niter                    = 10000000
 sits-energy-shift        = 0
 sits-nk-rest-file        = log_nk.dat
 sits-norm-rest-file      = log_norm.dat
-sits-constant-nk         = yes
+;sits-constant-nk         = yes
 
 ; User defined thingies
 user1-grps               = 

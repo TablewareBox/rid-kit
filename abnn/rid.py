@@ -61,6 +61,7 @@ def make_enhc(iter_index,
     graph_files.sort()
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    bPosre = jdata.get("gmx_posre", False)
     numb_walkers = jdata["numb_walkers"]
     template_dir = jdata["template_dir"]
     enhc_trust_lvl_1 = jdata["bias_trust_lvl_1"]
@@ -137,6 +138,8 @@ def make_enhc(iter_index,
             os.symlink(abs_path, walker_path + file_name)
         # config MD
         mol_conf_file = walker_path + "grompp.mdp"
+        if bPosre:
+            mol_conf_file = walker_path + "grompp_restraint.mdp"
         make_grompp_enhc(mol_conf_file, nsteps, frame_freq)
         # config plumed
         graph_list = ""
@@ -176,7 +179,10 @@ def run_enhc(iter_index,
 
     fp = open(json_file, 'r')
     jdata = json.load(fp)
+    bPosre = jdata.get("gmx_posre", False)
     gmx_prep = jdata["gmx_prep"]
+    if bPosre:
+        gmx_prep += " -f grompp_restraint.mdp"
     gmx_run = jdata["gmx_run"]
     enhc_thread = jdata["bias_thread"]
     gmx_run = gmx_run + (" -nt %d " % enhc_thread)
