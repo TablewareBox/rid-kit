@@ -88,12 +88,18 @@ def make_enhc(iter_index,
         for ii in mol_files:
             if os.path.exists(walker_path + ii):
                 os.remove(walker_path + ii)
-            shutil.copy(mol_path + ii, walker_path)
+            try:
+                shutil.copy(mol_path + ii, walker_path)
+            except:
+                pass
         # copy conf file
         conf_file = conf_list[walker_idx]
         if os.path.exists(walker_path + "conf.gro"):
             os.remove(walker_path + "conf.gro")
-        shutil.copy(conf_file, walker_path + "conf.gro")
+        try:
+            shutil.copy(conf_file, walker_path + "conf.gro")
+        except:
+            pass
 
         # if have prev confout.gro, use as init conf
         if (iter_index > 0):
@@ -128,7 +134,10 @@ def make_enhc(iter_index,
         for ii in enhc_files:
             if os.path.exists(walker_path + ii):
                 os.remove(walker_path + ii)
-            shutil.copy(enhc_path + ii, walker_path)
+            try:
+                shutil.copy(enhc_path + ii, walker_path)
+            except:
+                pass
         # copy graph files
         for ii in graph_files:
             file_name = os.path.basename(ii)
@@ -238,7 +247,10 @@ def post_enhc(iter_index,
         walker_path = work_path + make_walker_name(ii) + "/"
         os.chdir(walker_path)
         if os.path.isdir("confs"):
-            shutil.rmtree("confs")
+            try:
+                shutil.rmtree("confs")
+            except:
+                pass
         os.makedirs("confs")
         os.chdir(cwd)
 

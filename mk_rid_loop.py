@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import glob
+import argparse
 import mdtraj as md
 import numpy as np
 import pickle
@@ -277,7 +278,7 @@ def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1):
     wf.close()
 
 
-def mk_rid(dirname, protein_name, job_dir):
+def mk_rid(dirname, protein_name, job_dir, task="rid"):
     mol_dir = os.path.join(ridkit_dir, 'mol/', protein_name)
     # mol_dir='%s/rid-kit/mol/%s'+protein_dir
     print('mol_dir', mol_dir)
@@ -299,8 +300,8 @@ def mk_rid(dirname, protein_name, job_dir):
     os.system('cp posre.itp.templ %s/posre.itp' % (mol_dir))
     os.system('cp %s/mol/*.mdp %s' % (ridkit_dir, mol_dir))
     os.chdir(ridkit_dir)
-    os.system('python gen.py rid ./jsons/default_gen.json %s/phipsi_selected.json %s -o %s' %
-              (job_dir, os.path.join("./mol", protein_name), os.path.join(job_dir, "run06")))
+    os.system('python gen.py %s ./jsons/default_gen.json %s/phipsi_selected.json %s -o %s' %
+              (task, job_dir, os.path.join("./mol", protein_name), os.path.join(job_dir, "run06")))
     os.chdir(job_dir)
 
 
@@ -340,7 +341,7 @@ job_dir = os.path.join(os.getcwd(), protein_name)
 protein_dir = os.path.join(os.getcwd(), '../predictions/CASP11/T0818/K92_P111/disgro')
 protein_files = [("disgro_%d_whole.pdb" % i) for i in range(1, 9)]
 
-loop_res = list(range(92, 112))
+loop = [92, 111]
 
 dirname = os.getcwd()
 num_sol = None
@@ -349,11 +350,24 @@ num_Na, num_Cl = None, None
 
 
 def main():
-    global job_dir
+    global job_dir, loop
     files = [os.path.join(protein_dir, name) for name in protein_files]
     pathlib.Path(job_dir).mkdir(parents=True, exist_ok=True)
     print(job_dir)
     job_dir = os.path.abspath(job_dir)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("TASK", type=str, help="the task", default="rid")
+    parser.add_argument("-d", "--jobdir", type=str, help="job directory", default=job_dir)
+    parser.add_argument("-m", "--mol", default=files, type=str, help="the mol dir", nargs="*")
+    parser.add_argument("-l", "--loop", default=loop, type=int, help="loop range", nargs="*")
+
+    args = parser.parse_args()
+    job_dir = args.jobdir
+    files = args.mol
+    loop = args.loop
+    loop_res = list(range(loop[0], loop[1]+1))
+
     os.chdir(job_dir)  # at R0949/
 
     for num, file in enumerate(files):

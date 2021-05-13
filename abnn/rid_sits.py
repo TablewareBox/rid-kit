@@ -96,19 +96,31 @@ def make_enhc(iter_index,
         create_path(walker_path)
         if sits_param is not None:
             if os.path.exists(join("sits", "log_nk.dat")):
-                shutil.copyfile(join("sits", "log_nk.dat"), join(walker_path, "log_nk.dat"))
+                try:
+                    shutil.copyfile(join("sits", "log_nk.dat"), join(walker_path, "log_nk.dat"))
+                except:
+                    pass
             if os.path.exists(join("sits", "log_norm.dat")):
-                shutil.copyfile(join("sits", "log_norm.dat"), join(walker_path, "log_norm.dat"))
+                try:
+                    shutil.copyfile(join("sits", "log_norm.dat"), join(walker_path, "log_norm.dat"))
+                except:
+                    pass
         # copy md ifles
         for ii in mol_files:
             if os.path.exists(walker_path + ii):
                 os.remove(walker_path + ii)
-            shutil.copy(mol_path + ii, walker_path)
+            try:
+                shutil.copy(mol_path + ii, walker_path)
+            except:
+                pass
         # copy conf file
         conf_file = conf_list[walker_idx]
         if os.path.exists(walker_path + "conf.gro"):
             os.remove(walker_path + "conf.gro")
-        shutil.copy(conf_file, walker_path + "conf.gro")
+        try:
+            shutil.copy(conf_file, walker_path + "conf.gro")
+        except:
+            pass
 
         # if have prev confout.gro, use as init conf
         if (iter_index > 0):
@@ -143,7 +155,10 @@ def make_enhc(iter_index,
         for ii in enhc_files:
             if os.path.exists(walker_path + ii):
                 os.remove(walker_path + ii)
-            shutil.copy(enhc_path + ii, walker_path)
+            try:
+                shutil.copy(enhc_path + ii, walker_path)
+            except:
+                pass
         # copy graph files
         for ii in graph_files:
             file_name = os.path.basename(ii)
@@ -277,7 +292,10 @@ def post_enhc(iter_index,
         walker_path = work_path + make_walker_name(ii) + "/"
         os.chdir(walker_path)
         if os.path.isdir("confs"):
-            shutil.rmtree("confs")
+            try:
+                shutil.rmtree("confs")
+            except:
+                pass
         os.makedirs("confs")
         os.chdir(cwd)
 
@@ -337,8 +355,11 @@ def make_sits_iter(sits_iter_index, json_file, graph_files):
     if sits_iter_index > 0:
         old_dir = join("sits", make_iter_name(sits_iter_index-1))
         walker_dir = join("sits", make_iter_name(sits_iter_index), enhc_name, make_walker_name(0))
-        shutil.copyfile( join(old_dir, "log_nk.dat"), join(walker_dir, "log_nk.dat") )
-        shutil.copyfile( join(old_dir, "log_norm.dat"), join(walker_dir, "log_norm.dat") )
+        try:
+            shutil.copyfile( join(old_dir, "log_nk.dat"), join(walker_dir, "log_nk.dat") )
+            shutil.copyfile( join(old_dir, "log_norm.dat"), join(walker_dir, "log_norm.dat") )
+        except:
+            pass
 
 
 def run_sits_iter(sits_iter_index, json_file):
@@ -413,7 +434,10 @@ def post_train_eff(sits_iter_index, json_file):
             for mfile in model_files:
                 if os.path.exists(join(prev_work_path, mfile)):
                     os.rename(join(prev_work_path, mfile), join(prev_work_path, mfile) + ".%03d" % sits_iter_index)
-                shutil.copy(mfile, prev_work_path)
+                try:
+                    shutil.copy(mfile, prev_work_path)
+                except:
+                    pass
 
             prev_models = glob.glob(join(prev_train_path, "*.pb"))
             models = glob.glob(join(train_path, "*.pb"))
