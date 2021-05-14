@@ -50,17 +50,17 @@ from lib.modeling import clean_train
 import lib.MachineLocal as MachineLocal
 import lib.MachineSlurm as MachineSlurm
 from lib.machine_exec import exec_hosts
-from lib.machine_exec import exec_hosts_batch
-from lib.batch_exec import exec_batch
-from lib.batch_exec import exec_batch_group
+# from lib.machine_exec import exec_hosts_batch
+# from lib.batch_exec import exec_batch
+# from lib.batch_exec import exec_batch_group
 
-# from dpdispatcher.lazy_local_context import LazyLocalContext
-# from dpdispatcher.submission import Submission, Job, Task, Resources
-# # from dpdispatcher.pbs import PBS
-# from dpdispatcher.slurm import Slurm
-#
-# from lib.modeling import resources
-# from lib.modeling import cpu_resources
+from dpdispatcher.lazy_local_context import LazyLocalContext
+from dpdispatcher.submission import Submission, Job, Task, Resources
+# from dpdispatcher.pbs import PBS
+from dpdispatcher.slurm import Slurm
+
+from lib.modeling import resources
+from lib.modeling import cpu_resources
 
 exec_machine = MachineLocal
 max_tasks = 1000000
@@ -72,10 +72,10 @@ enhc_out_plm = "plm.out"
 
 
 def get_distance(pdbname):
-    """
+    '''
     calculate the distance of CA between two residues.
     Argues: pdbname: pdb file.
-    """
+    '''
     traj = md.load(pdbname, top=pdbname)
     contacts = md.compute_contacts(traj, scheme='ca')
     alldist = []
@@ -91,10 +91,10 @@ def get_distance(pdbname):
 
 
 def get_CA_atom(gro_file):
-    """
+    '''
     get the index of CA from the .gro file. the CA atom will coorespond to the residues in distance list.
     Return: a list containing index of CA in order.
-    """
+    '''
     residual_info = []
     with open(gro_file, 'r') as gro:
         for line in gro.readlines():
@@ -110,12 +110,12 @@ def get_CA_atom(gro_file):
 
 
 def add_distance_restrain(residue_atoms, distance_list, dis_buttom=0.2, dis_kappa=10.467):
-    """
+    '''
     add command in plumed file. add restrains on the distance between CA atoms.
     Args:
-            residue_atoms: list containing indexes of CA atoms.
-            distance_list: list containing chosen pair and corresponding distance.
-    """
+            residues_atoms: list containing indexes of CA atoms.
+            diatance_list: list containing choosen pair and coorespnding distance.
+    '''
     # 0.025 kcal/mol/A^2 = 0.025*4.1868*100 kj/mol/nm^2 = 10.467
     ret = "\n"
     argues = ""
@@ -156,7 +156,6 @@ def make_enhc(iter_index,
     graph_files.sort()
     fp = open(json_file, 'r')
     jdata = json.load(fp)
-    bPosre = jdata.get("gmx_posre", False)
     numb_walkers = jdata["numb_walkers"]
     template_dir = jdata["template_dir"]
     enhc_trust_lvl_1 = jdata["bias_trust_lvl_1"]
@@ -174,33 +173,30 @@ def make_enhc(iter_index,
     assert (len(conf_list) >= numb_walkers), "not enough conf files in mol dir %s" % mol_path
 
     create_path(work_path)
-
+    kappa = np.linspace(2, 16, 8)
+    # dis_kappa = np.linspace(20, 6, 8)
     for walker_idx in range(numb_walkers):
+        kk = kappa[walker_idx]
         walker_path = work_path + make_walker_name(walker_idx) + "/"
         create_path(walker_path)
         # copy md ifles
         for ii in mol_files:
             if os.path.exists(walker_path + ii):
                 os.remove(walker_path + ii)
-            try:
-                shutil.copy(mol_path + ii, walker_path)
-            except:
-                pass
+            shutil.copy(mol_path + ii, walker_path)
+
         # copy conf file
         conf_file = conf_list[walker_idx]
         if os.path.exists(walker_path + "conf.gro"):
             os.remove(walker_path + "conf.gro")
-        try:
-            shutil.copy(conf_file, walker_path + "conf.gro")
-        except:
-            pass
+        shutil.copy(conf_file, walker_path + "conf.gro")
         if os.path.exists(walker_path + "conf_init.gro"):
             os.remove(walker_path + "conf_init.gro")
         shutil.copy(conf_file, walker_path + "conf_init.gro")
 
         # if have prev confout.gro, use as init conf
         if (iter_index > 0):
-            # kk = kappa[(walker_idx + iter_index) % 8]
+            kk = kappa[(walker_idx + iter_index) % 8]
             prev_enhc_path = make_iter_name(iter_index - 1) + "/" + enhc_name + "/" + make_walker_name(walker_idx) + "/"
             prev_enhc_path = os.path.abspath(prev_enhc_path) + "/"
             if os.path.isfile(prev_enhc_path + "confout.gro"):
@@ -212,8 +208,7 @@ def make_enhc(iter_index,
                     "use conf of iter " + make_iter_name(iter_index - 1) + " walker " + make_walker_name(walker_idx))
             else:
                 raise RuntimeError("cannot find prev output conf file  " + prev_enhc_path + 'confout.gro')
-            log_task("use conf of iter " + make_iter_name(iter_index -
-                                                          1) + " walker " + make_walker_name(walker_idx))
+
             ###########################################
             num_of_cluster = np.loadtxt(prev_enhc_path + 'num_of_cluster.dat')
             pre_trust_lvl1 = np.loadtxt(prev_enhc_path + 'trust_lvl1.dat')
@@ -231,21 +226,16 @@ def make_enhc(iter_index,
         for ii in enhc_files:
             if os.path.exists(walker_path + ii):
                 os.remove(walker_path + ii)
-            try:
-                shutil.copy(enhc_path + ii, walker_path)
-            except:
-                pass
-        # copy graph files
+            shutil.copy(enhc_path + ii, walker_path)
+            # copy graph files
         for ii in graph_files:
             file_name = os.path.basename(ii)
             abs_path = os.path.abspath(ii)
             if os.path.exists(walker_path + file_name):
                 os.remove(walker_path + file_name)
             os.symlink(abs_path, walker_path + file_name)
-        # config MD
-        mol_conf_file = walker_path + "grompp.mdp"
-        if bPosre:
-            mol_conf_file = walker_path + "grompp_restraint.mdp"
+            # config MD
+        mol_conf_file = walker_path + "grompp_restraint.mdp"
         make_grompp_enhc(mol_conf_file, nsteps, frame_freq)
         # config plumed
         graph_list = ""
@@ -258,12 +248,13 @@ def make_enhc(iter_index,
                 graph_list = "%s,%s" % (graph_list, file_name)
             counter = counter + 1
         plm_conf = walker_path + enhc_plm
+        posre_file = walker_path + 'posre.itp'
+        replace(posre_file, 'TEMP', '%d' % kk)
         replace(plm_conf, "MODEL=[^ ]* ", ("MODEL=%s " % graph_list))
         replace(plm_conf, "TRUST_LVL_1=[^ ]* ", ("TRUST_LVL_1=%f " % enhc_trust_lvl_1))
         replace(plm_conf, "TRUST_LVL_2=[^ ]* ", ("TRUST_LVL_2=%f " % enhc_trust_lvl_2))
         replace(plm_conf, "STRIDE=[^ ]* ", ("STRIDE=%d " % frame_freq))
         replace(plm_conf, "FILE=[^ ]* ", ("FILE=%s " % enhc_out_plm))
-
         plm_bf_conf = walker_path + enhc_bf_plm
         replace(plm_bf_conf, "STRIDE=[^ ]* ", ("STRIDE=%d " % frame_freq))
         replace(plm_bf_conf, "FILE=[^ ]* ", ("FILE=%s " % enhc_out_plm))
@@ -292,10 +283,7 @@ def run_enhc(iter_index,
 
     fp = open(json_file, 'r')
     jdata = json.load(fp)
-    bPosre = jdata.get("gmx_posre", False)
-    gmx_prep = jdata["gmx_prep"]
-    if bPosre:
-        gmx_prep += " -f grompp_restraint.mdp -r conf_init.gro"
+    gmx_prep = jdata["gmx_prep"] + ' -f grompp_restraint.mdp -r conf_init.gro'
     gmx_run = jdata["gmx_run"]
     enhc_thread = jdata["bias_thread"]
     gmx_run = gmx_run + (" -nt %d " % enhc_thread)
@@ -315,43 +303,42 @@ def run_enhc(iter_index,
     batch_modules = jdata['batch_modules']
     batch_sources = jdata['batch_sources']
 
-    # print('debug', glob.glob(work_path + "/[0-9]*[0-9]"))
+    print('debug', glob.glob(work_path + "/[0-9]*[0-9]"))
     # all_task = glob.glob(work_path + "/[0-9]*[0-9]")
     all_task = list(filter(lambda x: os.path.isdir(x), glob.glob(work_path + "/[0-9]*[0-9]")))
     all_task.sort()
 
-    # all_task_basedir = [os.path.relpath(ii, work_path) for ii in all_task]
-    # print('run_enhc:work_path', work_path)
-    # print('run_enhc:gmx_prep_cmd:', gmx_prep_cmd)
-    # print('run_enhc:gmx_run_cmd:', gmx_run_cmd)
-    # print('run_enhc:all_task:', all_task)
-    # print('run_enhc:all_task_basedir:', all_task_basedir)
-    # print('run_enhc:batch_jobs:', batch_jobs)
-    #
-    # lazy_local_context = LazyLocalContext(local_root='./', work_profile=None)
-    # # pbs = PBS(context=lazy_local_context)
-    # slurm = Slurm(context=lazy_local_context)
-    # gmx_prep_task = [Task(command=gmx_prep_cmd, task_work_path=ii, outlog='gmx_grompp.log', errlog='gmx_grompp.err') for
-    #                  ii in all_task_basedir]
-    # gmx_prep_submission = Submission(work_base=work_path, resources=resources, batch=slurm, task_list=gmx_prep_task)
-    #
-    # gmx_prep_submission.run_submission()
-    #
-    # gmx_run_task = [Task(command=gmx_run_cmd, task_work_path=ii, outlog='gmx_mdrun.log', errlog='gmx_mdrun.log') for ii
-    #                 in all_task_basedir]
-    # gmx_run_submission = Submission(work_base=work_path, resources=resources, batch=slurm, task_list=gmx_run_task)
-    # gmx_run_submission.run_submission()
+    all_task_basedir = [os.path.relpath(ii, work_path) for ii in all_task]
+    print('run_enhc:work_path', work_path)
+    print('run_enhc:gmx_prep_cmd:', gmx_prep_cmd)
+    print('run_enhc:gmx_run_cmd:', gmx_run_cmd)
+    print('run_enhc:all_task:', all_task)
+    print('run_enhc:all_task_basedir:', all_task_basedir)
+    print('run_enhc:batch_jobs:', batch_jobs)
 
-    global exec_machine
-    exec_hosts(MachineLocal, gmx_prep_cmd, 1, all_task, None)
-    if batch_jobs:
-        exec_batch(gmx_run_cmd, enhc_thread, 1, all_task, task_args=None, time_limit=batch_time_limit,
-                   modules=batch_modules, sources=batch_sources)
-    else:
-        if len(all_task) == 1:
-            exec_hosts(MachineLocal, gmx_run_cmd, enhc_thread, all_task, None)
-        else:
-            exec_hosts_batch(exec_machine, gmx_run_cmd, enhc_thread, all_task, None)
+    lazy_local_context = LazyLocalContext(local_root='./', work_profile=None)
+    # pbs = PBS(context=lazy_local_context)
+    slurm = Slurm(context=lazy_local_context)
+    gmx_prep_task = [Task(command=gmx_prep_cmd, task_work_path=ii, outlog='gmx_grompp.log', errlog='gmx_grompp.err') for
+                     ii in all_task_basedir]
+    gmx_prep_submission = Submission(work_base=work_path, resources=resources, batch=slurm, task_list=gmx_prep_task)
+
+    gmx_prep_submission.run_submission()
+
+    gmx_run_task = [Task(command=gmx_run_cmd, task_work_path=ii, outlog='gmx_mdrun.log', errlog='gmx_mdrun.log') for ii
+                    in all_task_basedir]
+    gmx_run_submission = Submission(work_base=work_path, resources=resources, batch=slurm, task_list=gmx_run_task)
+    gmx_run_submission.run_submission()
+
+    # global exec_machine
+    # exec_hosts(MachineLocal, gmx_prep_cmd, 1, all_task, None)
+    # if batch_jobs:
+    #     exec_batch(gmx_run_cmd, enhc_thread, 1, all_task, task_args = None, time_limit = batch_time_limit, modules = batch_modules, sources = batch_sources)
+    # else :
+    #     if len(all_task) == 1 :
+    #         exec_hosts(MachineLocal, gmx_run_cmd, enhc_thread, all_task, None)
+    #     else :
+    #         exec_hosts_batch(exec_machine, gmx_run_cmd, enhc_thread, all_task, None)
 
 
 def post_enhc(iter_index,
@@ -375,14 +362,12 @@ def post_enhc(iter_index,
         walker_path = work_path + make_walker_name(ii) + "/"
         os.chdir(walker_path)
         if os.path.isdir("confs"):
-            try:
-                shutil.rmtree("confs")
-            except:
-                pass
+            shutil.rmtree("confs")
         os.makedirs("confs")
         os.chdir(cwd)
 
     global exec_machine
+    print('rid.py:post_enhc:gmx_split_cmd', gmx_split_cmd)
     exec_hosts(MachineLocal, gmx_split_cmd, 1, all_task, None)
 
     for ii in range(numb_walkers):
@@ -437,6 +422,11 @@ def clean_enhc(iter_index):
 
     all_task = glob.glob(work_path + "/[0-9]*[0-9]")
     all_task.sort()
+    all_task += glob.glob(work_path + "/*_job_id")
+    all_task += glob.glob(work_path + "/*_finished")
+    all_task += glob.glob(work_path + "/*.sub")
+    all_task += glob.glob(work_path + "/*.json")
+    all_task += glob.glob(work_path + "/*.sub.o*")
 
     cleaned_files = ['state*.cpt', '*log', 'traj.trr', 'topol.tpr', 'ener.edr', 'mdout.mdp']
     cwd = os.getcwd()
@@ -456,6 +446,7 @@ def clean_enhc_confs(iter_index):
 
     all_task = glob.glob(work_path + "/[0-9]*[0-9]")
     all_task.sort()
+    print(all_task)
 
     cwd = os.getcwd()
     for ii in all_task:
@@ -521,6 +512,7 @@ def run_iter(json_file, init_model):
                     return
             elif jj == 4:
                 log_iter("run_res", ii, jj)
+                print('rid.py:run_res', run_res)
                 run_res(ii, json_file, exec_machine)
             elif jj == 5:
                 log_iter("post_res", ii, jj)

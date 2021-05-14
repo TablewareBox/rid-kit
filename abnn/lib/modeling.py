@@ -11,8 +11,6 @@ import subprocess as sp
 import glob
 import logging
 import time
-import lib.MachineLocal as MachineLocal
-import lib.MachineSlurm as MachineSlurm
 # machine
 import lib.MachineLocal as MachineLocal
 import lib.MachineSlurm as MachineSlurm
@@ -23,7 +21,13 @@ from lib.batch_exec import exec_batch_group
 
 from template.tools.cluster_cv import sel_from_cluster
 
+from dpdispatcher.lazy_local_context import LazyLocalContext
+from dpdispatcher.submission import Submission, Job, Task, Resources
+# from dpdispatcher.pbs import PBS
+from dpdispatcher.slurm import Slurm
+
 cv_dim = 2
+cv_dih_dim = 0
 
 shell_clustering = False
 
@@ -45,6 +49,14 @@ res_plm = "plumed.res.dat"
 
 train_name = "02.train"
 train_files = ["model.py", "main.py", "freeze.py"]
+
+# Machine V100_8_32 and GPU_2080Ti and T4_16_62
+resources = Resources(number_node=1, cpu_per_node=8, gpu_per_node=1, queue_name="GPU_2080Ti", group_size=1,
+                      if_cuda_multi_devices=False)
+res_resources = Resources(number_node=1, cpu_per_node=8, gpu_per_node=1, queue_name="GPU_2080Ti", group_size=10,
+                          if_cuda_multi_devices=False)
+cpu_resources = Resources(number_node=1, cpu_per_node=1, gpu_per_node=0, queue_name="GPU_2080Ti", group_size=1,
+                          if_cuda_multi_devices=False)
 
 
 def make_iter_name(iter_index):
@@ -203,6 +215,7 @@ def make_res(iter_index,
     sel_threshold = jdata["sel_threshold"]
     max_sel = jdata["max_sel"]
     cluster_threshold = jdata["cluster_threshold"]
+    init_numb_cluster = [22, 30]
 
     base_path = os.getcwd()
     iter_name = make_iter_name(iter_index)
@@ -228,9 +241,8 @@ def make_res(iter_index,
 
         graph_files = glob.glob("*.pb")
         if len(graph_files) != 0:
-            sel_cmd = "python3 test.std.py -m *.pb -t %f -d %s --output sel.out --output-angle sel.angle.out" % (
-                sel_threshold, enhc_out_angle)
-            sel_cmd = cmd_append_log(sel_cmd, "sel.log", env=cmd_env)
+            sel_cmd = "python3 test.std.py -m *.pb -t %f -d %s --output sel.out --output-angle sel.angle.out" % (sel_threshold, enhc_out_angle)
+            sel_cmd = cmd_append_log(sel_cmd, "sel.log")
             log_task("select with threshold %f" % sel_threshold)
             log_task(sel_cmd)
             sp.check_call(sel_cmd, shell=True)
@@ -247,12 +259,39 @@ def make_res(iter_index,
                 continue
 
         else:
+            cluster_threshold = jdata["cluster_threshold"]
             conf_files = glob.glob( join(enhc_out_conf, "conf*gro") )
             sel_idx = range(len(conf_files))
             sel_angles = np.loadtxt(enhc_out_angle)
             sel_angles = np.reshape(sel_angles, [-1, cv_dim])
             np.savetxt('sel.out', sel_idx, fmt='%d')
             np.savetxt('sel.angle.out', sel_angles, fmt='%.6f')
+            if walker_idx == 0:
+                cls_sel = sel_from_cluster(sel_angles, cluster_threshold)
+                test_numb_cluster = len(set(cls_sel))
+                print(test_numb_cluster)
+                for test_iter in range(500):
+                    if test_numb_cluster < init_numb_cluster[0]:
+                        cluster_threshold = cluster_threshold * 0.95
+                        cls_sel = sel_from_cluster(sel_angles, cluster_threshold)
+                        test_numb_cluster = len(set(cls_sel))
+                        print(cluster_threshold)
+                        print(test_numb_cluster)
+                    elif test_numb_cluster > init_numb_cluster[1]:
+                        cluster_threshold = cluster_threshold * 1.05
+                        cls_sel = sel_from_cluster(sel_angles, cluster_threshold)
+                        test_numb_cluster = len(set(cls_sel))
+                        print(cluster_threshold)
+                        print(test_numb_cluster)
+                    else:
+                        print(cluster_threshold)
+                        print(cluster_threshold)
+                        np.savetxt(walker_path + 'cluster_threshold.dat', [cluster_threshold], fmt='%f')
+                        np.savetxt('cluster_threshold.dat', [cluster_threshold], fmt='%f')
+                        break
+            else:
+                cluster_threshold = np.loadtxt("cluster_threshold.dat")
+
         conf_start = 0
         conf_every = 1
 
@@ -274,6 +313,7 @@ def make_res(iter_index,
             cls_sel = sel_from_cluster(sel_angles, cluster_threshold)
 ##############################################################################################
             np.savetxt('num_of_cluster.dat', [len(set(cls_sel))], fmt='%d')
+            np.savetxt('cluster_threshold.dat', [cluster_threshold], fmt='%f')
             if len(cls_sel) > max_sel:
                 cls_sel = cls_sel[-max_sel:]
             sel_idx = sel_idx[cls_sel]
@@ -289,10 +329,8 @@ def make_res(iter_index,
         for ii in sel_idx:
             res_confs.append(walker_path + enhc_out_conf + ("conf%d.gro" % ii))
 
-        assert (len(res_confs) ==
-                res_angles.shape[0]), "number of enhc out conf does not match out angle"
-        assert (len(sel_idx) ==
-                res_angles.shape[0]), "number of enhc out conf does not numb sel"
+        assert (len(res_confs) == res_angles.shape[0]), "number of enhc out conf does not match out angle"
+        assert (len(sel_idx) == res_angles.shape[0]), "number of enhc out conf does not numb sel"
         nconf = len(res_confs)
         if nconf == 0:
             ret_list[walker_idx] = False
@@ -322,8 +360,7 @@ def make_res(iter_index,
                 if bPosre:
                     mol_conf_file = join(work_path, "grompp_sits_restraint.mdp")
                 make_grompp_sits(mol_conf_file, sits_param, sits_iter=False, iter_index=iter_index)
-            conf_file = walker_path + enhc_out_conf + \
-                ("conf%d.gro" % sel_idx[ii])
+            conf_file = walker_path + enhc_out_conf + ("conf%d.gro" % sel_idx[ii])
             if os.path.exists(work_path + "conf.gro"):
                 os.remove(work_path + "conf.gro")
             conf_file = os.path.abspath(conf_file)
@@ -376,7 +413,7 @@ def run_res(iter_index,
         if not bPosre:
             gmx_prep += " -f grompp_sits.mdp"
         else:
-            gmx_prep += " -f grompp_sits_restraint.mdp"
+            gmx_prep += " -f grompp_sits_restraint.mdp -r conf_init.gro"
     gmx_run = jdata["gmx_run"]
     res_thread = jdata["res_thread"]
     gmx_run = gmx_run + (" -nt %d " % res_thread)
@@ -398,10 +435,18 @@ def run_res(iter_index,
     base_path = os.getcwd() + "/"
 
     if not os.path.isdir(res_path):
-        raise RuntimeError(
-            "do not see any restrained simulation (%s)." % res_path)
+        raise RuntimeError("do not see any restrained simulation (%s)." % res_path)
 
-    all_task_propose = glob.glob(res_path + "/[0-9]*[0-9]")
+    # all_task_propose = glob.glob(res_path + "/[0-9]*[0-9]")
+    # assume that
+    # TODO
+    all_task_propose = list(filter(lambda x: os.path.isdir(x), glob.glob(res_path + "/[0-9]*[0-9]")))
+    print('lib.modeling.run_res:all_task_propose:', all_task)
+    print('lib.modeling.run_res:gmx_prep_cmd:', gmx_prep_cmd)
+    print('lib.modeling.run_res:gmx_run_cmd:', gmx_run_cmd)
+    print('lib.modeling.run_res:gmx_cont_run_cmd:', gmx_cont_run_cmd)
+    # raise RuntimeError('lib.modeling.run_res:debug')
+
     if len(all_task_propose) == 0:
         return
     all_task_propose.sort()
@@ -416,6 +461,24 @@ def run_res(iter_index,
                     all_cont_task.append(ii)
                 else:
                     all_task.append(ii)
+    # if len(all_task) == 0:
+    #     return None
+    # all_task.sort()
+
+    # all_task_basedir = [os.path.relpath(ii, res_path) for ii in all_task]
+    # lazy_local_context = LazyLocalContext(local_root='./', work_profile=None)
+    # slurm = Slurm(context=lazy_local_context)
+    # # pbs = PBS(context=lazy_local_context)
+
+    # gmx_prep_task = [Task(command=gmx_prep_cmd, task_work_path=ii, outlog='gmx_grompp.log', errlog='gmx_grompp.err') for
+    #                  ii in all_task_basedir]
+    # gmx_prep_submission = Submission(work_base=res_path, resources=res_resources, batch=slurm, task_list=gmx_prep_task)
+    # gmx_prep_submission.run_submission()
+
+    # gmx_run_task = [Task(command=gmx_run_cmd, task_work_path=ii, outlog='gmx_mdrun.log', errlog='gmx_mdrun.log') for ii
+    #                 in all_task_basedir]
+    # gmx_run_submission = Submission(work_base=res_path, resources=res_resources, batch=slurm, task_list=gmx_run_task)
+    # gmx_run_submission.run_submission()
 
     if batch_jobs:
         exec_hosts(MachineLocal, gmx_prep_cmd, 1, all_task, None)
@@ -427,14 +490,11 @@ def run_res(iter_index,
             exec_hosts(MachineLocal, gmx_run_cmd, res_thread, all_task, None)
         elif len(all_task) > 1:
             exec_hosts(MachineLocal, gmx_prep_cmd, 1, all_task, None)
-            exec_hosts_batch(exec_machine, gmx_run_cmd,
-                             res_thread, all_task, None)
+            exec_hosts_batch(exec_machine, gmx_run_cmd, res_thread, all_task, None)
         if len(all_cont_task) == 1:
-            exec_hosts(MachineLocal, gmx_cont_run_cmd,
-                       res_thread, all_cont_task, None)
+            exec_hosts(MachineLocal, gmx_cont_run_cmd, res_thread, all_cont_task, None)
         elif len(all_cont_task) > 1:
-            exec_hosts_batch(exec_machine, gmx_cont_run_cmd,
-                             res_thread, all_cont_task, None)
+            exec_hosts_batch(exec_machine, gmx_cont_run_cmd, res_thread, all_cont_task, None)
 
 
 def post_res(iter_index,
@@ -450,7 +510,7 @@ def post_res(iter_index,
     res_path = iter_name + "/" + res_name + "/"
     base_path = os.getcwd() + "/"
 
-    all_task = glob.glob(res_path + "/[0-9]*[0-9]")
+    all_task = list(filter(lambda x: os.path.isdir(x), glob.glob(res_path + "/[0-9]*[0-9]")))
     if len(all_task) == 0:
         np.savetxt(res_path + data_name + '.raw', [], fmt="%.6e")
         return
@@ -473,6 +533,18 @@ def post_res(iter_index,
     # run_node_tasks(max_thread, 1, all_task, cmpf_cmd)
     exec_hosts(MachineLocal, cmpf_cmd, 1, all_task, None)
 
+    # group_size = int((len(all_task) + 1) // 8)
+    # cmpf_resources = Resources(number_node=1, cpu_per_node=1, gpu_per_node=0, queue_name="GPU_2080Ti",
+    #                            group_size=group_size, if_cuda_multi_devices=False)
+    # lazy_local_context = LazyLocalContext(local_root='./', work_profile=None)
+    # slurm = Slurm(context=lazy_local_context)
+    # cmpf_task = [Task(command=cmpf_cmd, task_work_path="./{}".format(ii), outlog='cmpf.out', errlog='cmpf.err') for ii
+    #              in all_task]
+    # cmpf_submission = Submission(work_base='./', resources=cmpf_resources, batch=slurm, task_list=cmpf_task)
+    # cmpf_submission.run_submission()
+    # print('cmpf done')
+
+    abs_res_path = os.getcwd()
     for work_path in all_task:
         os.chdir(work_path)
         this_centers = np.loadtxt('centers.out')
@@ -480,8 +552,7 @@ def post_res(iter_index,
         this_force = np.loadtxt('force.out')
         force = np.append(force, this_force)
         ndim = this_force.size
-        assert (
-            ndim == this_centers.size), "center size is diff to force size in " + work_path
+        assert (ndim == this_centers.size), "center size is diff to force size in " + work_path
         os.chdir(base_path)
 
     centers = np.reshape(centers, [-1, ndim])
@@ -492,6 +563,7 @@ def post_res(iter_index,
     norm_force = np.linalg.norm(force, axis=1)
     log_task("min|f| = %e  max|f| = %e  avg|f| = %e" %
              (np.min(norm_force), np.max(norm_force), np.average(norm_force)))
+    print('save cmpf done!')
 
 
 def make_train_eff(sits_iter_index, json_file):
@@ -638,14 +710,25 @@ def clean_res(iter_index):
 
     all_task = glob.glob(res_path + "/[0-9]*[0-9]")
     all_task.sort()
+    all_task += glob.glob(res_path + "/*_job_id")
+    all_task += glob.glob(res_path + "/*_finished")
+    all_task += glob.glob(res_path + "/*.sub")
+    all_task += glob.glob(res_path + "/*.json")
+    all_task += glob.glob(res_path + "/*.sub.o*")
+    all_task += glob.glob(res_path + "/slurm-[0-9]*")
 
     cleaned_files = ['*log', 'general_mkres.sh', 'state*.cpt', 'traj_comp.xtc',
                      'topol.tpr', 'tools', 'confout.gro', 'ener.edr', 'mdout.mdp', 'plumed.res.templ']
     cwd = os.getcwd()
+
     for ii in all_task:
-        os.chdir(ii)
-        clean_files(cleaned_files)
-        os.chdir(cwd)
+        if os.path.isdir(ii):
+            os.chdir(ii)
+            clean_files(cleaned_files)
+            os.chdir(cwd)
+        elif os.path.isfile(ii):
+            os.remove(ii)
+    print('res clean done')
 
 
 def make_train(iter_index,
@@ -692,8 +775,7 @@ def make_train(iter_index,
         prev_data_file = join(base_path, make_iter_name(prev_iter_index), train_name, data_dir, data_name + ".raw")
         this_raw = join(base_path, make_iter_name(iter_index), res_name, data_name + ".raw")
         os.chdir(data_path)
-        os.symlink(os.path.relpath(prev_data_file),
-                   os.path.basename(data_old_file))
+        os.symlink(os.path.relpath(prev_data_file), os.path.basename(data_old_file))
         os.symlink(os.path.relpath(this_raw), os.path.basename(data_new_file))
         os.chdir(base_path)
         with open(data_file, "wb") as fo:
@@ -802,6 +884,25 @@ def run_train(iter_index,
     batch_modules = jdata['batch_modules']
     batch_sources = jdata['batch_sources']
 
+    # print('lib.modeling.run_train:train_cmd:', train_cmd)
+    # print('lib.modeling.run_train:freez_cmd:', freez_cmd)
+    # print('lib.modeling.run_train:train_path:', train_path)
+    # print('lib.modeling.run_train:task_dirs:', task_dirs)
+
+    # lazy_local_context = LazyLocalContext(local_root='./', work_profile=None)
+    # # pbs = PBS(context=lazy_local_context)
+    # slurm = Slurm(context=lazy_local_context)
+
+    # train_task = [Task(command=train_cmd, task_work_path=ii, outlog='train.log', errlog='train.log') for ii in
+    #               task_dirs]
+    # train_submission = Submission(work_base=train_path, resources=resources, batch=slurm, task_list=train_task)
+    # train_submission.run_submission()
+
+    # freez_task = [Task(command=freez_cmd, task_work_path=ii, outlog='freeze.log', errlog='freeze.log') for ii in
+    #               task_dirs]
+    # freez_submission = Submission(work_base=train_path, resources=resources, batch=slurm, task_list=freez_task)
+    # freez_submission.run_submission()
+
     os.chdir(train_path)
     if batch_jobs:
         exec_batch(train_cmd, train_thread, 1, task_dirs, task_args=None,
@@ -810,8 +911,7 @@ def run_train(iter_index,
         if len(task_dirs) == 1:
             exec_hosts(MachineLocal, train_cmd, train_thread, task_dirs, None)
         else:
-            exec_hosts_batch(exec_machine, train_cmd,
-                             train_thread, task_dirs, None)
+            exec_hosts_batch(exec_machine, train_cmd, train_thread, task_dirs, None)
 
     # exec_hosts(MachineLocal, freez_cmd, 1, task_dirs, None)
     for task_dir in task_dirs:
@@ -828,14 +928,24 @@ def clean_train(iter_index):
 
     all_task = glob.glob(train_path + "/[0-9]*[0-9]")
     all_task.sort()
+    all_task += glob.glob(train_path + "/*_job_id")
+    all_task += glob.glob(train_path + "/*_finished")
+    all_task += glob.glob(train_path + "/*.sub")
+    all_task += glob.glob(train_path + "/*.json")
+    all_task += glob.glob(train_path + "/*.sub.o*")
 
     # cleaned_files = ['checkpoint', 'model.ckpt*', 'freeze.log']
     cleaned_files = ['freeze.log']
     cwd = os.getcwd()
+
     for ii in all_task:
-        os.chdir(ii)
-        clean_files(cleaned_files)
-        os.chdir(cwd)
+        if os.path.isdir(ii):
+            os.chdir(ii)
+            clean_files(cleaned_files)
+            os.chdir(cwd)
+        elif os.path.isfile(ii):
+            os.remove(ii)
+    print('train clean done')
 
 def train_ori(iter_index,
               json_file,
@@ -1034,3 +1144,7 @@ def train_ori(iter_index,
     for ii in range(numb_model):
         os.symlink("%03d/graph.pb" % ii, "graph.%03d.pb" % ii)
     os.chdir(base_path)
+
+if __name__ == '__main__':
+    run_res(0, '../rid.json')
+    pass

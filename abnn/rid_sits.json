@@ -1,7 +1,7 @@
 {
     "_comment":		"Gromacs settings",
-    "gmx_prep":		"gmx grompp",
-    "gmx_run":		"gmx mdrun",
+    "gmx_prep":		"gmx grompp -maxwarn 10",
+    "gmx_run":		"gmx mdrun -nb gpu -bonded gpu",
     "gmx_posre":    true,
     "gmx_split_traj":	"echo 0 | gmx trjconv -sep -f traj.trr -o confs/conf.gro -vel",
 
