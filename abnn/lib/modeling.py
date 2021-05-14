@@ -285,12 +285,11 @@ def make_res(iter_index,
                         print(test_numb_cluster)
                     else:
                         print(cluster_threshold)
-                        print(cluster_threshold)
-                        np.savetxt(walker_path + 'cluster_threshold.dat', [cluster_threshold], fmt='%f')
+                        np.savetxt(join(base_path, 'cluster_threshold.dat'), [cluster_threshold], fmt='%f')
                         np.savetxt('cluster_threshold.dat', [cluster_threshold], fmt='%f')
                         break
             else:
-                cluster_threshold = np.loadtxt("cluster_threshold.dat")
+                cluster_threshold = np.loadtxt(join(base_path, "cluster_threshold.dat"))
 
         conf_start = 0
         conf_every = 1
