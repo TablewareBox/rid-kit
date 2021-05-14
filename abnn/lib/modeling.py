@@ -21,10 +21,10 @@ from lib.batch_exec import exec_batch_group
 
 from template.tools.cluster_cv import sel_from_cluster
 
-from dpdispatcher.lazy_local_context import LazyLocalContext
-from dpdispatcher.submission import Submission, Job, Task, Resources
-# from dpdispatcher.pbs import PBS
-from dpdispatcher.slurm import Slurm
+# from dpdispatcher.lazy_local_context import LazyLocalContext
+# from dpdispatcher.submission import Submission, Job, Task, Resources
+# # from dpdispatcher.pbs import PBS
+# from dpdispatcher.slurm import Slurm
 
 cv_dim = 2
 cv_dih_dim = 0
@@ -41,7 +41,7 @@ enhc_out_conf = "confs/"
 enhc_out_angle = "angle.rad.out"
 
 mol_name = "mol"
-mol_files = ["grompp.mdp", "grompp_sits.mdp", "grompp_sits_iter.mdp", "grompp_restraint.mdp", "grompp_sits_restraint.mdp", "grompp_sits_iter_restraint.mdp", "topol.top", "posre.itp"]
+mol_files = ["grompp.mdp", "grompp_sits.mdp", "grompp_sits_iter.mdp", "grompp_restraint.mdp", "grompp_sits_restraint.mdp", "grompp_sits_iter_restraint.mdp", "topol.top", "posre.itp", "index.ndx"]
 
 res_name = "01.resMD"
 res_files = ["cmpf.sh", "cmpf.py", "cmpf_wt.py", "cmpf_wtij.py", "general_mkres.sh", "plumed.res.templ", "tools"]
@@ -51,12 +51,12 @@ train_name = "02.train"
 train_files = ["model.py", "main.py", "freeze.py"]
 
 # Machine V100_8_32 and GPU_2080Ti and T4_16_62
-resources = Resources(number_node=1, cpu_per_node=8, gpu_per_node=1, queue_name="GPU_2080Ti", group_size=1,
-                      if_cuda_multi_devices=False)
-res_resources = Resources(number_node=1, cpu_per_node=8, gpu_per_node=1, queue_name="GPU_2080Ti", group_size=10,
-                          if_cuda_multi_devices=False)
-cpu_resources = Resources(number_node=1, cpu_per_node=1, gpu_per_node=0, queue_name="GPU_2080Ti", group_size=1,
-                          if_cuda_multi_devices=False)
+# resources = Resources(number_node=1, cpu_per_node=8, gpu_per_node=1, queue_name="GPU_2080Ti", group_size=1,
+#                       if_cuda_multi_devices=False)
+# res_resources = Resources(number_node=1, cpu_per_node=8, gpu_per_node=1, queue_name="GPU_2080Ti", group_size=10,
+#                           if_cuda_multi_devices=False)
+# cpu_resources = Resources(number_node=1, cpu_per_node=1, gpu_per_node=0, queue_name="GPU_2080Ti", group_size=1,
+#                           if_cuda_multi_devices=False)
 
 
 def make_iter_name(iter_index):
@@ -413,6 +413,8 @@ def run_res(iter_index,
             gmx_prep += " -f grompp_sits.mdp"
         else:
             gmx_prep += " -f grompp_sits_restraint.mdp -r conf_init.gro"
+        if sits_param.get("sits_energrp", None) not in ["Protein", "MOL"]:
+            gmx_prep += " -n index.ndx"
     gmx_run = jdata["gmx_run"]
     res_thread = jdata["res_thread"]
     gmx_run = gmx_run + (" -nt %d " % res_thread)

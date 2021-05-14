@@ -338,6 +338,8 @@ def run_enhc(iter_index,
             gmx_prep += " -f grompp_sits.mdp"
         if bPosre:
             gmx_prep = gmx_prep.replace(".mdp", "_restraint.mdp -r conf_init.gro")
+        if sits_param.get("sits_energrp", None) not in ["Protein", "MOL"]:
+            gmx_prep += " -n index.ndx"
     elif bPosre:
         gmx_prep += " -f grompp_restraint.mdp -r conf_init.gro"
     gmx_run = jdata["gmx_run"]

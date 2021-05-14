@@ -234,6 +234,21 @@ def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1):
     atoms_loop = []
     atoms_loopCA = []
 
+    cmd_make_ndx = '''\
+gmx make_ndx -f %s -o index.ndx << EOF
+r%d-%d
+name 19 Loop
+r%d-%d & 4
+name 20 Loop-Backbone
+r%d-%d & 6
+name 21 Loop-MainChain
+q
+EOF''' % (structure,
+          list_biased_ang[0], list_biased_ang[-1],
+          list_biased_ang[0], list_biased_ang[-1],
+          list_biased_ang[0], list_biased_ang[-1])
+    os.system(cmd_make_ndx)
+
     posre_flat_bottom = '[ position_restraints ]\n;  i funct       g         r(nm)       k\n'
     for res in loop_res:
         res_atoms = list(topology.select('(mass 2.0 to 90) and (residue %d)' % res) + 1)
@@ -298,6 +313,7 @@ def mk_rid(dirname, protein_name, job_dir, task="rid"):
         os.system('cp %s/npt.gro %s/conf00%d.gro' % (conf_dirs[0], mol_dir, j))
     os.system('cp %s/npt.gro %s/conf.gro' % ("conf000", mol_dir))
     os.system('cp posre.itp.templ %s/posre.itp' % (mol_dir))
+    os.system('cp index.ndx %s/index.ndx' % (mol_dir))
     os.system('cp %s/mol/*.mdp %s' % (ridkit_dir, mol_dir))
     os.chdir(ridkit_dir)
     os.system('python %s %s ./jsons/default_gen.json %s/phipsi_selected.json %s -o %s' %

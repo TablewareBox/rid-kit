@@ -541,7 +541,7 @@ def _main():
         rid_run = "rid_sits.py"
         rid_param = "rid_sits.json"
         rid_file_copy = [rid_run, rid_param, "template", "lib"]
-        bf_file_copy += ["grompp_sits_iter.mdp", "grompp_sits.mdp", "grompp_sits_iter_restraint.mdp", "grompp_sits_restraint.mdp"]
+        bf_file_copy += ["grompp_sits_iter.mdp", "grompp_sits.mdp", "grompp_sits_iter_restraint.mdp", "grompp_sits_restraint.mdp", "index.ndx"]
         res_file_copy += ["cmpf_wt.py", "cmpf_wtij.py"]
         gen_rid(args.output, args.GEN_DEF,
                 args.CV_DEF, mol_dir, res_dir, rid_dir)
