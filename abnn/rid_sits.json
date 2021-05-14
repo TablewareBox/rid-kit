@@ -12,12 +12,12 @@
 
     "sits_settings": {
         "sits_nsteps":       500000,
-        "sits_energrp":      "Protein",
+        "sits_energrp":      "Loop",
         "sits-enhance-mode": "PP_AND_PW",
         "sits-t-numbers":    31,
         "nstsitsrecord":     1,
         "nstsitsupdate":     400,
-        "sits-t-ref":        298.0,
+        "sits-t-ref":        300.0,
         "sits-t-low":        300.0,
         "sits-t-high":       600.0,
         "niter":             10000000,
@@ -75,7 +75,7 @@
     "batch_modules":    [
         "#SBATCH --exclude=gpu13",
         "#SBATCH --partition GPURTX",
-        "source ~/env/gmx_2020.2_sits-bias.env"
+        "source ~/env/gmx_2020.2_sits-bias-gpu.env"
     ],
     "batch_sources":    [
     ],
@@ -83,7 +83,7 @@
         "PATH=/data2/publicsoft/anaconda3/envs/tf112/bin:$PATH"
     ],
     "cmd_sources":      [
-        "source ~/env/gmx_2020.2_sits-bias.env"
+        "source ~/env/gmx_2020.2_sits-bias-gpu.env"
     ],
     "_comment":         "That's all"
 }
