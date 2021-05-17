@@ -363,9 +363,14 @@ def make_res(iter_index,
             if os.path.exists(work_path + "conf.gro"):
                 os.remove(work_path + "conf.gro")
             conf_file = os.path.abspath(conf_file)
+            conf_init_file = walker_path + "conf_init.gro"
+            if os.path.exists(work_path + "conf_init.gro"):
+                os.remove(work_path + "conf_init.gro")
+            conf_init_file = os.path.abspath(conf_init_file)
             tmp_cwd = os.getcwd()
             os.chdir(work_path)
             os.symlink(os.path.relpath(conf_file), "conf.gro")
+            os.symlink(os.path.relpath(conf_init_file), "conf_init.gro")
             os.chdir(tmp_cwd)
 
         task_dirs = []
@@ -442,10 +447,10 @@ def run_res(iter_index,
     # assume that
     # TODO
     all_task_propose = list(filter(lambda x: os.path.isdir(x), glob.glob(res_path + "/[0-9]*[0-9]")))
-    print('lib.modeling.run_res:all_task_propose:', all_task)
-    print('lib.modeling.run_res:gmx_prep_cmd:', gmx_prep_cmd)
-    print('lib.modeling.run_res:gmx_run_cmd:', gmx_run_cmd)
-    print('lib.modeling.run_res:gmx_cont_run_cmd:', gmx_cont_run_cmd)
+    # print('lib.modeling.run_res:all_task_propose:', all_task)
+    # print('lib.modeling.run_res:gmx_prep_cmd:', gmx_prep_cmd)
+    # print('lib.modeling.run_res:gmx_run_cmd:', gmx_run_cmd)
+    # print('lib.modeling.run_res:gmx_cont_run_cmd:', gmx_cont_run_cmd)
     # raise RuntimeError('lib.modeling.run_res:debug')
 
     if len(all_task_propose) == 0:

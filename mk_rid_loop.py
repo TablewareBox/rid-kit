@@ -18,7 +18,7 @@ Last update date: 2021/2/24
 Author: Dongdong Wang, Yanze Wang.
 """
 
-ridkit_dir = "~/cjh/loopOpt_test/rid-kit"
+ridkit_dir = "/data1/ddwang/cjh/loopOpt_test/rid-kit"
 
 
 def replace(file_name, pattern, subst):
