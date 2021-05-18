@@ -670,7 +670,7 @@ def run_iter(json_file, init_model):
             if kk > 0:
                 open(join("sits", make_iter_name(kk-1), "rid_iter_end.dat"), "w+").write("%d" % ii)
             open(join("sits", make_iter_name(kk), "rid_iter_begin.dat"), "w+").write("%d" % ii)
-            for jj in range(sits_iter_rec[1], 6):
+            for jj in range((sits_iter_rec[1] + 1) % 6, 6):
                 if kk * max_tasks + jj <= sits_iter_rec[0] * max_tasks + sits_iter_rec[1]:
                     continue
                 os.chdir(base_dir)
