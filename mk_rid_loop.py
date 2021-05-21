@@ -123,7 +123,7 @@ def run_md(protein_dir, loop=0):
     print('echo -e "1\n1\n" | gmx pdb2gmx -f %s.pdb -o processed.gro -ignh -heavyh > grompp.log 2>&1' % protein_dir)
     os.system('echo -e "1\n1\n" | gmx pdb2gmx -f %s.pdb -o processed.gro -ignh -heavyh > grompp.log 2>&1' % protein_dir)
 
-    if loop == 0:
+    if (loop == 0) and not os.path.exists('../box_information.txt'):
         print('gmx editconf -f processed.gro -o newbox.gro -d 0.9 -c -bt triclinic')
         os.system(
             'gmx editconf -f processed.gro -o newbox.gro -d 0.9 -c -bt triclinic')
@@ -163,6 +163,12 @@ def run_md(protein_dir, loop=0):
             box_info.write('num_sol={}\nbox_size={},{},{}\nnum_Na={}\nnum_Cl={}'.format(
                 num_sol, box_size[0], box_size[1], box_size[2], num_Na, num_Cl))
     else:
+        if os.path.exists('../box_information.txt'):
+            contents = open('../box_information.txt', 'w').readlines()
+            num_sol = int(contents[0].split("=")[1])
+            box_size = [float(s) for s in contents[1].split("=")[1].split(",")]
+            num_Na = int(contents[2].split("=")[1])
+            num_Cl = int(contents[3].split("=")[1])
         print('gmx editconf -f processed.gro -o newbox.gro -box {} {} {} -c -bt triclinic'.format(
             box_size[0], box_size[1], box_size[2]))
         os.system('gmx editconf -f processed.gro -o newbox.gro -box {} {} {} -c -bt triclinic'.format(
@@ -322,12 +328,12 @@ def mk_rid(dirname, protein_name, job_dir, task="rid"):
 
 
 def mk_rwplus(where_rw_dir, target):
-    '''
+    """
     generate rwplus dir in *.run dir. 3 files (calRWplus, rw.dat, scb,dat) should be in where_rw_dir.
     Args:
             where_rw_dir: containing rwplus files.
             target: name of protein.
-    '''
+    """
     rw_dir = './{}.run06/rwplus'.format(
         target)  # where they will be copied to.
     print(rw_dir)
@@ -339,17 +345,6 @@ def mk_rwplus(where_rw_dir, target):
     os.system('cp -r {}/scb.dat {}'.format(where_rw_dir, rw_dir))
     return
 
-
-# protein_dir = ['R0996-D7']
-# protein_dir = ['R0997']
-# protein_dir = ['R1004-D2']
-# R0949, R0957s2, R0959, R0962, R0968s1, R0968s2,
-# R0974s1, R0976-D1, R0976-D2, R0977-D2, R0981-D3, R0981-D4,
-# R0981-D5, R0982-D2, R0986s1, R0986s2, R0989-D1, R0992,
-# R0993s2, R0996-D4, R0996-D5, R0996-D7, R0997,
-# R0999-D3, R1001, R1002-D2, R1004-D2, R1016
-# protein_dir = ['R0949', 'R0957s2', 'R0959', 'R0962', 'R0968s1', 'R0968s2']
-# , 'R0976-D1', 'R0976-D2', 'R0977-D2', 'R0981-D3', 'R0981-D4'
 
 protein_name = 'CASP11-T0818-K92-P111'
 job_dir = os.path.join(os.getcwd(), protein_name)

@@ -641,7 +641,8 @@ def make_train_eff(sits_iter_index, json_file):
         data_new_file = join(data_path, data_name + ".new.raw")
         base_path = os.getcwd() + "/"
 
-        os.makedirs(data_path)
+        if not os.path.exists(data_path):
+            os.makedirs(data_path)
 
         # collect data
         log_task("collect data upto %d" % (iter_index))
