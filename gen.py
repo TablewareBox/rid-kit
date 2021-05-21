@@ -82,14 +82,20 @@ def gen_bf(out_dir,
     create_path(out_dir)
 
     for ii in bf_file_copy:
-        shutil.copy(mol_dir + ii, out_dir)
+        try:
+            shutil.copy(mol_dir + ii, out_dir)
+        except:
+            pass
     mdps = glob.glob(out_dir + "*.mdp")
     for mdp in mdps:
         make_grompp_res(mdp, 50000, bf_traj_stride)
 
     confs = glob.glob(mol_dir + "conf*gro")
     for cc in confs:
-        shutil.copy(cc, out_dir)
+        try:
+            shutil.copy(cc, out_dir)
+        except:
+            pass
 
     ret = general_plumed("bf", confs[0], cv_file, pstride=bf_traj_stride)
     with open(out_dir + "plumed.dat", "w") as fp:
@@ -132,16 +138,25 @@ def gen_res(out_dir,
     create_path(out_dir)
 
     for ii in bf_file_copy:
-        shutil.copy(mol_dir + ii, out_dir)
+        try:
+            shutil.copy(mol_dir + ii, out_dir)
+        except:
+            pass
     mdps = glob.glob(out_dir + "*.mdp")
     for mdp in mdps:
         make_grompp_res(mdp, 50000, res_traj_stride)
 
     for ii in res_file_copy:
         if os.path.isdir(res_dir + ii):
-            shutil.copytree(res_dir + ii, out_dir + ii)
+            try:
+                shutil.copytree(res_dir + ii, out_dir + ii)
+            except:
+                pass
         elif os.path.isfile(res_dir + ii):
-            shutil.copy(res_dir + ii, out_dir)
+            try:
+                shutil.copy(res_dir + ii, out_dir)
+            except:
+                pass
 
     ret = general_plumed("res", conf_file, cv_file,
                          kappa=res_kappa,
@@ -284,9 +299,15 @@ def gen_rid(out_dir,
     # rid root
     for ii in rid_file_copy:
         if os.path.isdir(rid_dir + ii):
-            shutil.copytree(rid_dir + ii, out_dir + ii)
+            try:
+                shutil.copytree(rid_dir + ii, out_dir + ii)
+            except:
+                pass
         elif os.path.isfile(rid_dir + ii):
-            shutil.copy(rid_dir + ii, out_dir)
+            try:
+                shutil.copy(rid_dir + ii, out_dir)
+            except:
+                pass
     assert rid_run in rid_file_copy, "rid file should have run.py"
     assert rid_param in rid_file_copy, "rid file should have param.json"
     assert "template" in rid_file_copy, "rid file should have template"
@@ -541,7 +562,7 @@ def _main():
         rid_run = "rid_sits.py"
         rid_param = "rid_sits.json"
         rid_file_copy = [rid_run, rid_param, "template", "lib"]
-        bf_file_copy += ["grompp_sits_iter.mdp", "grompp_sits.mdp", "grompp_sits_iter_restraint.mdp", "grompp_sits_restraint.mdp", "index.ndx"]
+        bf_file_copy += ["grompp_sits_iter.mdp", "grompp_sits.mdp", "grompp_sits_iter_restraint.mdp", "grompp_sits_restraint.mdp", "posre.itp", "index.ndx"]
         res_file_copy += ["cmpf_wt.py", "cmpf_wtij.py"]
         gen_rid(args.output, args.GEN_DEF,
                 args.CV_DEF, mol_dir, res_dir, rid_dir)
