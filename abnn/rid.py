@@ -480,6 +480,7 @@ def clean_enhc_confs(iter_index):
 
 
 def run_iter(json_file, init_model):
+    base_dir = os.getcwd()
     prev_model = init_model
     fp = open(json_file, 'r')
     jdata = json.load(fp)
@@ -501,6 +502,7 @@ def run_iter(json_file, init_model):
         if ii > 0:
             prev_model = glob.glob(make_iter_name(ii - 1) + "/" + train_name + "/*pb")
         for jj in range(numb_task):
+            os.chdir(base_dir)
             if ii * max_tasks + jj <= iter_rec[0] * max_tasks + iter_rec[1]:
                 continue
             if jj == 0:

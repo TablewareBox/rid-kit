@@ -132,6 +132,7 @@ def make_grompp_sits(gro_file, sits_data, sits_iter=False, iter_index=0):
     replace(gro_file, "nstsitsrecord.*=.*", "nstsitsrecord = %d" % sits_data["nstsitsrecord"])
     replace(gro_file, "nstsitsupdate.*=.*", "nstsitsupdate = %d" % sits_data["nstsitsupdate"])
     replace(gro_file, "nst-sits-enerd-out.*=.*", "nst-sits-enerd-out = %d" % sits_data["nst-sits-enerd-out"])
+    replace(gro_file, "sits-t-ref.*=.*", "sits-t-ref = %.2f" % sits_data["sits-t-ref"])
     replace(gro_file, "sits-t-low.*=.*", "sits-t-low = %.2f" % sits_data["sits-t-low"])
     replace(gro_file, "sits-t-high.*=.*", "sits-t-high = %.2f" % sits_data["sits-t-high"])
     replace(gro_file, "sits-energy-shift.*=.*", "sits-energy-shift = %.2f" % sits_data["sits-energy-shift"])

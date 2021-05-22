@@ -660,10 +660,11 @@ def run_iter(json_file, init_model):
         create_path("sits")
     data_name = "data"
     for ii in range(iter_rec[0], numb_iter):
+        kk = int(ii / niter_per_sits)
+        data_name = "data%03d" % (kk + 1)
         if ii > 0:
             prev_model = glob.glob(make_iter_name(ii-1) + "/" + train_name + "/*pb")
         if ii % niter_per_sits == 0:
-            kk = int(ii / niter_per_sits)
             log_iter("run_sits_iter", kk, 0)
             if not os.path.exists(join("sits", make_iter_name(kk))):
                 create_path(join("sits", make_iter_name(kk)))
@@ -690,7 +691,6 @@ def run_iter(json_file, init_model):
                     if kk > 0:
                         post_train_eff(kk, json_file)
                 record_iter(record_sits, kk, jj)
-            data_name = "data%03d" % (kk+1)
         
         for jj in range(numb_task):
             if ii * max_tasks + jj <= iter_rec[0] * max_tasks + iter_rec[1]:
