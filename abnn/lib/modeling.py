@@ -599,7 +599,7 @@ def make_train_eff(sits_iter_index, json_file):
             all_task = glob.glob(res_path + "/[0-9]*[0-9]")
             if len(all_task) == 0:
                 np.savetxt(res_path + data_name + '.raw', [], fmt="%.6e")
-                return
+                continue
             all_task.sort()
             cmpf_cmd = "python cmpf_wtij.py -d %s -i %s -j %s" % (join(base_path, "sits"), make_iter_name(sits_iter_index), make_iter_name(j))
             cmpf_log = "cmpf.log"
@@ -974,31 +974,31 @@ def train_ori(iter_index,
     all_task = glob.glob(res_path + "/[0-9]*[0-9]")
     if len(all_task) == 0:
         np.savetxt(res_path + data_name + '.raw', [], fmt="%.6e")
-        return
-    all_task.sort()
-    centers = []
-    force = []
-    ndim = 0
+    else:
+        all_task.sort()
+        centers = []
+        force = []
+        ndim = 0
 
-    for work_path in all_task:
-        os.chdir(work_path)
-        this_centers = np.loadtxt('centers.out')
-        centers = np.append(centers, this_centers)
-        this_force = np.loadtxt('force_000.out')
-        force = np.append(force, this_force)
-        ndim = this_force.size
-        assert (
-                ndim == this_centers.size), "center size is diff to force size in " + work_path
-        os.chdir(base_path)
+        for work_path in all_task:
+            os.chdir(work_path)
+            this_centers = np.loadtxt('centers.out')
+            centers = np.append(centers, this_centers)
+            this_force = np.loadtxt('force_000.out')
+            force = np.append(force, this_force)
+            ndim = this_force.size
+            assert (
+                    ndim == this_centers.size), "center size is diff to force size in " + work_path
+            os.chdir(base_path)
 
-    centers = np.reshape(centers, [-1, ndim])
-    force = np.reshape(force, [-1, ndim])
-    data = np.concatenate((centers, force), axis=1)
-    np.savetxt(res_path + data_name + '.raw', data, fmt="%.6e")
+        centers = np.reshape(centers, [-1, ndim])
+        force = np.reshape(force, [-1, ndim])
+        data = np.concatenate((centers, force), axis=1)
+        np.savetxt(res_path + data_name + '.raw', data, fmt="%.6e")
 
-    norm_force = np.linalg.norm(force, axis=1)
-    log_task("min|f| = %e  max|f| = %e  avg|f| = %e" %
-             (np.min(norm_force), np.max(norm_force), np.average(norm_force)))
+        norm_force = np.linalg.norm(force, axis=1)
+        log_task("min|f| = %e  max|f| = %e  avg|f| = %e" %
+                 (np.min(norm_force), np.max(norm_force), np.average(norm_force)))
 
     template_dir = jdata["template_dir"]
     numb_model = jdata["numb_model"]
@@ -1094,64 +1094,63 @@ def train_ori(iter_index,
         for ii in prev_models:
             model_name = os.path.basename(ii)
             os.symlink(ii, join(train_path, model_name))
-        return
-
-    neurons = jdata["neurons"]
-    batch_size = jdata["batch_size"]
-    if iter_index < res_iter:
-        numb_epoches = jdata["numb_epoches"]
-        starter_lr = jdata["starter_lr"]
-        decay_steps = jdata["decay_steps"]
-        decay_rate = jdata["decay_rate"]
-        cmdl_args = ""
     else:
-        numb_epoches = jdata["res_numb_epoches"]
-        starter_lr = jdata["res_starter_lr"]
-        decay_steps = jdata["res_decay_steps"]
-        decay_rate = jdata["res_decay_rate"]
-        old_ratio = jdata["res_olddata_ratio"]
-        cmdl_args = " --restart --use-mix --old-ratio %f " % old_ratio
-
-    if jdata["resnet"]:
-        cmdl_args += " --resnet "
-    cmdl_args += " -n "
-    for nn in neurons:
-        cmdl_args += "%d " % nn
-    cmdl_args += " -b " + str(batch_size)
-    cmdl_args += " -e " + str(numb_epoches)
-    cmdl_args += " -l " + str(starter_lr)
-    cmdl_args += " --decay-steps " + str(decay_steps)
-    cmdl_args += " --decay-rate " + str(decay_rate)
-
-    train_cmd = "../main.py -t %d" % train_thread
-    train_cmd += cmdl_args
-    train_cmd = cmd_append_log(train_cmd, "train.log", env=cmd_env)
-    freez_cmd = "../freeze.py -o graph.pb"
-    freez_cmd = cmd_append_log(freez_cmd, "freeze.log", env=cmd_env)
-    task_dirs = [("%03d" % ii) for ii in range(numb_model)]
-
-    batch_jobs = jdata['batch_jobs']
-    batch_time_limit = jdata['batch_time_limit']
-    batch_modules = jdata['batch_modules']
-    batch_sources = jdata['batch_sources']
-
-    os.chdir(train_path)
-    if batch_jobs:
-        exec_batch(train_cmd, train_thread, 1, task_dirs, task_args=None,
-                   time_limit=batch_time_limit, modules=batch_modules, sources=batch_sources)
-    else:
-        if len(task_dirs) == 1:
-            exec_hosts(MachineLocal, train_cmd, train_thread, task_dirs, None)
+        neurons = jdata["neurons"]
+        batch_size = jdata["batch_size"]
+        if iter_index < res_iter:
+            numb_epoches = jdata["numb_epoches"]
+            starter_lr = jdata["starter_lr"]
+            decay_steps = jdata["decay_steps"]
+            decay_rate = jdata["decay_rate"]
+            cmdl_args = ""
         else:
-            exec_hosts_batch(exec_machine, train_cmd,
-                             train_thread, task_dirs, None)
+            numb_epoches = jdata["res_numb_epoches"]
+            starter_lr = jdata["res_starter_lr"]
+            decay_steps = jdata["res_decay_steps"]
+            decay_rate = jdata["res_decay_rate"]
+            old_ratio = jdata["res_olddata_ratio"]
+            cmdl_args = " --restart --use-mix --old-ratio %f " % old_ratio
 
-    # exec_hosts(MachineLocal, freez_cmd, 1, task_dirs, None)
-    for task_dir in task_dirs:
-        exec_hosts(MachineLocal, freez_cmd, 1, [task_dir], None)
-    for ii in range(numb_model):
-        os.symlink("%03d/graph.pb" % ii, "graph.%03d.pb" % ii)
-    os.chdir(base_path)
+        if jdata["resnet"]:
+            cmdl_args += " --resnet "
+        cmdl_args += " -n "
+        for nn in neurons:
+            cmdl_args += "%d " % nn
+        cmdl_args += " -b " + str(batch_size)
+        cmdl_args += " -e " + str(numb_epoches)
+        cmdl_args += " -l " + str(starter_lr)
+        cmdl_args += " --decay-steps " + str(decay_steps)
+        cmdl_args += " --decay-rate " + str(decay_rate)
+
+        train_cmd = "../main.py -t %d" % train_thread
+        train_cmd += cmdl_args
+        train_cmd = cmd_append_log(train_cmd, "train.log", env=cmd_env)
+        freez_cmd = "../freeze.py -o graph.pb"
+        freez_cmd = cmd_append_log(freez_cmd, "freeze.log", env=cmd_env)
+        task_dirs = [("%03d" % ii) for ii in range(numb_model)]
+
+        batch_jobs = jdata['batch_jobs']
+        batch_time_limit = jdata['batch_time_limit']
+        batch_modules = jdata['batch_modules']
+        batch_sources = jdata['batch_sources']
+
+        os.chdir(train_path)
+        if batch_jobs:
+            exec_batch(train_cmd, train_thread, 1, task_dirs, task_args=None,
+                       time_limit=batch_time_limit, modules=batch_modules, sources=batch_sources)
+        else:
+            if len(task_dirs) == 1:
+                exec_hosts(MachineLocal, train_cmd, train_thread, task_dirs, None)
+            else:
+                exec_hosts_batch(exec_machine, train_cmd,
+                                 train_thread, task_dirs, None)
+
+        # exec_hosts(MachineLocal, freez_cmd, 1, task_dirs, None)
+        for task_dir in task_dirs:
+            exec_hosts(MachineLocal, freez_cmd, 1, [task_dir], None)
+        for ii in range(numb_model):
+            os.symlink("%03d/graph.pb" % ii, "graph.%03d.pb" % ii)
+        os.chdir(base_path)
 
 if __name__ == '__main__':
     run_res(0, '../rid.json')
