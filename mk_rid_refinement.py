@@ -8,6 +8,7 @@ import re
 import shutil
 import time
 import heapq
+import argparse
 
 """
 This file can make rid dir for given molecular.
@@ -34,7 +35,7 @@ def replace(file_name, pattern, subst):
 
 def change_his(pdbname):
     """
-    This function can change all the HIS residues to HSD residues in pdbfile(pdbname). 
+    This function can change all the HIS residues to HSD residues in pdbfile(pdbname).
     it's used to meet the need of force field file. Some pdbs have different H+ sites on HIS residues, varying from HSD to HSP.
     """
     with open(pdbname, 'r') as pdb:
@@ -46,7 +47,7 @@ def change_his(pdbname):
 
 def pbs_submit(title, command, dir_path=os.getcwd(), host='V100_8_32', is_wait=True):
     """
-    This is a very naive pbs submittion function. for a given command, this function will generate a .pbs file to be submited. 
+    This is a very naive pbs submittion function. for a given command, this function will generate a .pbs file to be submited.
     The process will not be terminated untill the jobs in PBS are done.
     We recommand dpdisphier package as a better and mature tool.
     """
@@ -109,21 +110,23 @@ def pbs_submit(title, command, dir_path=os.getcwd(), host='V100_8_32', is_wait=T
                                 raise RuntimeError('Unknown error')
 
 
-def run_md(pdbname, loop=0):
+def run_md(protein_dir, loop=0):
     """
     Let molecule in pdb files go into the equilibrium state through em, nvt and npt simulations. The boxes information, solvent, ions are added too.
     All initial structures and walkers have the exact same solvent number, ion number, ion type and box size. Concentration of saline is set as 0.15M.
-    For this purpose, we record the information of the first structure as the tamplate.
+    For this purpose, we record the information of the first structure as the template.
     """
     global num_sol, box_size, num_Na, num_Cl
-    print('echo -e "1\n1\n" | gmx pdb2gmx -f %s.pdb -o processed.gro -ignh -heavyh > grompp.log 2>&1' % pdbname)
-    os.system('echo -e "1\n1\n" | gmx pdb2gmx -f %s.pdb -o processed.gro -ignh -heavyh > grompp.log 2>&1' % pdbname)
+    print('echo -e "1\n1\n" | gmx pdb2gmx -f %s.pdb -o processed.gro -ignh -heavyh > grompp.log 2>&1' % protein_dir)
+    os.system('echo -e "1\n1\n" | gmx pdb2gmx -f %s.pdb -o processed.gro -ignh -heavyh > grompp.log 2>&1' % protein_dir)
 
-    if loop == 0:
+    if (loop == 0) and not os.path.exists('../box_information.txt'):
         print('gmx editconf -f processed.gro -o newbox.gro -d 0.9 -c -bt triclinic')
-        os.system('gmx editconf -f processed.gro -o newbox.gro -d 0.9 -c -bt triclinic')
+        os.system(
+            'gmx editconf -f processed.gro -o newbox.gro -d 0.9 -c -bt triclinic')
         print('gmx solvate -cp newbox.gro -cs spc216.gro -o solv.gro -p topol.top > sol.log 2>&1')
-        os.system('gmx solvate -cp newbox.gro -cs spc216.gro -o solv.gro -p topol.top > sol.log 2>&1')
+        os.system(
+            'gmx solvate -cp newbox.gro -cs spc216.gro -o solv.gro -p topol.top > sol.log 2>&1')
         with open('solv.gro', 'r') as sol_gro:
             for line in sol_gro.readlines():
                 info = line.split()
@@ -153,19 +156,23 @@ def run_md(pdbname, loop=0):
                 if line.split()[0] == 'CL':
                     num_Cl = line_sp[1]
         with open('../box_information.txt', 'w') as box_info:
-            box_info.write(
-                'num_sol={}\nbox_size={},{},{}\nnum_Na={}\nnum_Cl={}'.format(num_sol, box_size[0], box_size[1],
-                                                                             box_size[2], num_Na, num_Cl))
+            box_info.write('num_sol={}\nbox_size={},{},{}\nnum_Na={}\nnum_Cl={}'.format(
+                num_sol, box_size[0], box_size[1], box_size[2], num_Na, num_Cl))
     else:
-        print('gmx editconf -f processed.gro -o newbox.gro -box {} {} {} -c -bt triclinic'.format(box_size[0],
-                                                                                                  box_size[1],
-                                                                                                  box_size[2]))
-        os.system('gmx editconf -f processed.gro -o newbox.gro -box {} {} {} -c -bt triclinic'.format(box_size[0],
-                                                                                                      box_size[1],
-                                                                                                      box_size[2]))
+        if os.path.exists('../box_information.txt'):
+            contents = open('../box_information.txt', 'w').readlines()
+            num_sol = int(contents[0].split("=")[1])
+            box_size = [float(s) for s in contents[1].split("=")[1].split(",")]
+            num_Na = int(contents[2].split("=")[1])
+            num_Cl = int(contents[3].split("=")[1])
+        print('gmx editconf -f processed.gro -o newbox.gro -box {} {} {} -c -bt triclinic'.format(
+            box_size[0], box_size[1], box_size[2]))
+        os.system('gmx editconf -f processed.gro -o newbox.gro -box {} {} {} -c -bt triclinic'.format(
+            box_size[0], box_size[1], box_size[2]))
         print('gmx solvate -cp newbox.gro -cs spc216.gro -o solv.gro -p topol.top > sol.log 2>&1')
-        os.system('gmx solvate -cp newbox.gro -cs spc216.gro -maxsol {} -o solv.gro -p topol.top > sol.log 2>&1'.format(
-            int(num_sol)))
+        os.system(
+            'gmx solvate -cp newbox.gro -cs spc216.gro -maxsol {} -o solv.gro -p topol.top > sol.log 2>&1'.format(
+                int(num_sol)))
 
         with open('topol.top', 'r') as top:
             for line in top.readlines():
@@ -191,7 +198,7 @@ def run_md(pdbname, loop=0):
         'gmx grompp -f npt.mdp -c nvt.gro -t nvt.cpt -p topol.top -o npt.tpr -r nvt.gro -maxwarn 1 > grompp_npt.log 2>&1')
     command = 'gmx mdrun -deffnm npt -v -nt 4'
     os.system(command)
-    # pbs_submit('rid_npt_{}'.format(pdbname), command=command, dir_path=os.getcwd())
+    # pbs_submit('rid_npt_{}'.format(protein_dir), command=command, dir_path=os.getcwd())
     # os.system('gmx mdrun -deffnm npt -v -nt 4')
     os.system('cp topol.top topol.top.bak')
 
@@ -199,22 +206,33 @@ def run_md(pdbname, loop=0):
 def mk_posre(dirname, pdbname):
     """
     We will add position restrain to gmx via .itp file.
-    For atoms chosen, we apply a score gotten from GNNQA.1DDT, which can predict the residue division from the native structure. 
-    In this Version, we divided the residues in groups of 5 and ranked for every group. we chose normalized cutoff = 0.35.
+    For atoms chosen, we apply a score gotten from GNNQA.1DDT, which can predict the residue division from the native structure.
+    In this Version, we divided the residues in groups of 5 and ranked for every group. we chose normalized cutoff=0.65.
     All 5 residues will be chosen if group scores > 0.35, and the position restrain will be added for Ca atoms in these residues.
+
+    2021/2/25 modified, we will use averange smooth function select CVs, instead of 'in group 5'.
     """
     window_num = 5
     qa = pickle.load(open('%s/CASP13/QA/%s.GNNQA.lDDT.pkl' % (dirname, pdbname), 'rb'))
     pdbname = pdbname + '.pdb'
-    print(qa.keys())
-    print(pdbname)
-    # raise RuntimeError
+    local_socre = qa[pdbname]['local']
     ave = []
-    for i in range(len(qa[pdbname]['local']) // window_num):
-        ave.append(np.mean(qa[pdbname]['local'][i * window_num:i * window_num + window_num]))
-    if len(qa[pdbname]['local']) % window_num != 0:
-        ave.append(np.mean(qa[pdbname]['local'][len(qa[pdbname]['local']) // window_num * window_num:]))
-    normalized = (ave - np.min(ave)) / (np.max(ave) - np.min(ave))
+    for i in range(len(local_socre)):
+        if i == 0:
+            ave.append((local_socre[i]+local_socre[i+1]+local_socre[i+2])/3)
+        elif i == 1:
+            ave.append((local_socre[i-1]+local_socre[i] +
+                        local_socre[i+1]+local_socre[i+2])/4)
+        elif i == len(local_socre)-2:
+            ave.append(
+                (local_socre[i-2]+local_socre[i-1]+local_socre[i]+local_socre[i+1])/4)
+        elif i == len(local_socre)-1:
+            ave.append((local_socre[i-2]+local_socre[i-1]+local_socre[i])/3)
+        else:
+            ave.append((local_socre[i-2]+local_socre[i-1] +
+                        local_socre[i]+local_socre[i+1]+local_socre[i+2])/5)
+    normalized = (ave-np.min(ave))/(np.max(ave)-np.min(ave))
+
     np.savetxt('normalized.txt', normalized)
     biased_ang = []
     #  <0.35 and 10% smallest
@@ -227,21 +245,18 @@ def mk_posre(dirname, pdbname):
     for index in sorted(min_index):
         all_index.append(index)
 
-    cutoff = 0.35
+    cutoff = 0.86
     for i in range(len(normalized)):
         if normalized[i] <= cutoff:
             all_index.append(i)
-    all_index = sorted(set(all_index))
-    for i in all_index:
-        if i < len(normalized) - 1:
-            for bb in range(i * window_num, (i + 1) * window_num):
-                biased_ang.append(bb)
-        elif i == len(normalized) - 1:
-            for bb in range((len(normalized) - 1) * window_num, len(qa[pdbname]['local'])):
-                biased_ang.append(bb)
-    # if normalized[len(normalized)-1]<=cutoff:
-    #     for bb in range((len(normalized)-1)*window_num,len(qa[pdbname]['local'])):
-    #         biased_ang.append(bb)
+    biased_ang = sorted(set(all_index))
+    # for i in all_index:
+    #     if i<len(normalized)-1:
+    #         for bb in range(i*window_num,(i+1)*window_num):
+    #             biased_ang.append(bb)
+    #     elif i==len(normalized)-1:
+    #         for bb in range((len(normalized)-1)*window_num,len(qa[pdbname]['local'])):
+    #             biased_ang.append(bb)
     print(biased_ang)
 
     np.savetxt('biased_res.txt', list(biased_ang), fmt='%d')
@@ -252,7 +267,7 @@ def mk_posre(dirname, pdbname):
     replace('phipsi_selected.json', '.*selected_index.*', '    "selected_index":  %s,' % list_biased_ang)
     array_r0 = 0.6 * (1 - normalized)
     structure = 'nvt.gro'
-    #   kappa=0.025      #kcal/mol/A2   *4.184*100 
+    #   kappa=0.025      #kcal/mol/A2   *4.184*100
     # kappa=15             #kj/mol/nm2
     t_ref = md.load(structure, top=structure)
     topology = t_ref.topology
@@ -264,15 +279,15 @@ def mk_posre(dirname, pdbname):
     wf.close()
 
 
-def mk_rid(dirname, pdbname):
+def mk_rid(dirname, pdbname, job_dir, task="rid"):
     mol_dir = os.path.join(ridkit_dir, 'mol/', pdbname)
     print('mol_dir', mol_dir)
     print('pdbname', pdbname)
     print('dirname', dirname)
     pathlib.Path(mol_dir).mkdir(parents=True, exist_ok=True)
     os.system('cp %s/topol.top %s' % (pdbname, mol_dir))
-    _r_dir = ['%s' % pp, '%s.GNNRefine.DAN1' % pdbname, '%s.GNNRefine.DAN2' % pdbname, '%s.GNNRefine.M1' % pdbname,
-              '%s.GNNRefine.M2' % pdbname, '%s.GNNRefine.M3' % pdbname]
+    _r_dir = ['%s' % pdbname, '%s.GNNRefine.DAN1' % pdbname, '%s.GNNRefine.DAN2' % pdbname,
+              '%s.GNNRefine.M1' % pdbname, '%s.GNNRefine.M2' % pdbname, '%s.GNNRefine.M3' % pdbname]
     for i in range(len(_r_dir)):
         os.system('cp %s/npt.gro %s/conf00%d.gro' % (_r_dir[i], mol_dir, i))
     for j in range(len(_r_dir), 8):
@@ -282,61 +297,64 @@ def mk_rid(dirname, pdbname):
     os.system('cp %s/mol/*.mdp %s' % (ridkit_dir, mol_dir))
     # raise RuntimeError
     os.chdir(ridkit_dir)
-    os.system('python gen.py rid ./jsons/default_gen.json %s/%s/%s/phipsi_selected.json ./mol/%s/ -o %s/%s.run06' % (
-    dirname, pdbname, pdbname, pdbname, dirname, pdbname))
+    os.system('python %s %s ./jsons/default_gen.json %s/%s/%s/phipsi_selected.json ./mol/%s/ -o %s/%s.run06' %
+              (os.path.join(ridkit_dir, "gen.py"), task, dirname, pdbname, pdbname, pdbname, dirname, pdbname))
     os.chdir('%s/%s' % (dirname, pdbname))
 
 
-def mk_rwplus(where_rw_dir, target):
+def mk_score(where_rw_dir, where_evo_path, target):
     """
     generate rwplus dir in *.run dir. 3 files (calRWplus, rw.dat, scb,dat) should be in where_rw_dir.
     Args:
-            where_rw_dir: containing rwplus files.
+            where_sco_dir: containing rwplus files.
             target: name of protein.
     """
-    rw_dir = './{}.run06/rwplus'.format(target)  # where they will be copied to.
-    print(rw_dir)
-    if os.path.exists(rw_dir):
-        shutil.rmtree(rw_dir)
-    os.mkdir(rw_dir)
-    os.system('cp -r {}/calRWplus {}'.format(where_rw_dir, rw_dir))
-    os.system('cp -r {}/rw.dat {}'.format(where_rw_dir, rw_dir))
-    os.system('cp -r {}/scb.dat {}'.format(where_rw_dir, rw_dir))
+    score_dir = './{}.run06/score'.format(target)  # where they will be copied to.
+    if os.path.exists(score_dir):
+        shutil.rmtree(score_dir)
+    os.mkdir(score_dir)
+    os.system('cp -r {}/calRWplus {}'.format(where_rw_dir, score_dir))
+    os.system('cp -r {}/rw.dat {}'.format(where_rw_dir, score_dir))
+    os.system('cp -r {}/scb.dat {}'.format(where_rw_dir, score_dir))
+    os.system('cp -r {}/TMscore {}'.format(os.path.join(where_rw_dir, '..'), score_dir))
     return
 
 
-# 
-# pdbname = ['R0996-D7']
-# pdbname = ['R0997']
-pdbname = ['R0996-D7']
-dirname = os.getcwd()
+def main():
+    for pp in pdbname:
+        pp = pp.strip()
+        r_dir = ['%s' % pp, '%s.GNNRefine.DAN1' % pp, '%s.GNNRefine.DAN2' % pp,
+                 '%s.GNNRefine.M1' % pp, '%s.GNNRefine.M2' % pp, '%s.GNNRefine.M3' % pp]
+        pathlib.Path(pp).mkdir(parents=True, exist_ok=True)
+        os.chdir(pp)  # at R0949/
+        for num, rr in enumerate(r_dir):
+            pathlib.Path(rr).mkdir(parents=True, exist_ok=True)
+            os.chdir(rr)
+            os.system('cp %s/CASP13/models/%s.pdb ./' % (dirname, rr))
+            os.system('cp %s/mdp/* ./' % dirname)
+            os.system('cp -r %s/charmm36-mar2019.ff ./' % dirname)
+            change_his('./%s.pdb' % rr)
+            run_md(rr, loop=num)
+            replace('topol.top', '.*charmm36-mar2019.ff',
+                    '#include "{}/charmm36-mar2019.ff'.format(dirname))
+            mk_posre(dirname, pp)
+            os.chdir('..')
 
-# num_sol = 5597
-# box_size = [5.78000, 6.50800, 5.40500]
-# num_Na, num_Cl = 18, 17
-
-num_sol = None
-box_size = []
-num_Na, num_Cl = None, None
-
-for pp in pdbname:
-    pp = pp.strip()
-    r_dir = ['%s' % pp, '%s.GNNRefine.DAN1' % pp, '%s.GNNRefine.DAN2' % pp, '%s.GNNRefine.M1' % pp,
-             '%s.GNNRefine.M2' % pp, '%s.GNNRefine.M3' % pp]
-    pathlib.Path(pp).mkdir(parents=True, exist_ok=True)
-    os.chdir(pp)  # at R0949/
-    for num, rr in enumerate(r_dir):
-        pathlib.Path(rr).mkdir(parents=True, exist_ok=True)
-        os.chdir(rr)
-        os.system('cp %s/CASP13/models/%s.pdb ./' % (dirname, rr))
-        os.system('cp %s/mdp/* ./' % dirname)
-        os.system('cp -r %s/charmm36-mar2019.ff ./' % dirname)
-        change_his('./%s.pdb' % rr)
-        run_md(rr, loop=num)
-        replace('topol.top', '.*charmm36-mar2019.ff', '#include "{}/charmm36-mar2019.ff'.format(dirname))
-        mk_posre(dirname, pp)
+        mk_rid(dirname, pp)
         os.chdir('..')
-    print(os.getcwd())
-    mk_rid(dirname, pp)
-    os.chdir('..')
-    mk_rwplus('/home/dongdong/wyz/rwplus/RWplus', target=pp)
+        mk_score(where_rw_dir='/home/dongdong/wyz/rwplus/RWplus', where_evo_path="/home/dongdong/wyz/EvoEF2-master/EvoEF2", target=pp)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='makr rid dir.')
+    parser.add_argument('target', type=str)
+    args = parser.parse_args()
+    new_target = args.target
+
+    dirname = os.getcwd()
+    pdbname = [new_target]
+    num_sol = None
+    box_size = []
+    num_Na, num_Cl = None, None
+    main()
+

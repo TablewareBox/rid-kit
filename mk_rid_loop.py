@@ -299,11 +299,11 @@ EOF''' % (structure,
     wf.close()
 
 
-def mk_rid(dirname, protein_name, job_dir, task="rid"):
-    mol_dir = os.path.join(job_dir, 'mol/', protein_name)
+def mk_rid(dirname, pdbname, job_dir, task="rid"):
+    mol_dir = os.path.join(job_dir, 'mol/', pdbname)
     # mol_dir='%s/rid-kit/mol/%s'+protein_dir
     print('mol_dir', mol_dir)
-    print('protein_name', protein_name)
+    print('pdbname', pdbname)
     print('dirname', dirname)
     pathlib.Path(mol_dir).mkdir(parents=True, exist_ok=True)
 
@@ -346,8 +346,8 @@ def mk_rwplus(where_rw_dir, target):
     return
 
 
-protein_name = 'CASP11-T0818-K92-P111'
-job_dir = os.path.join(os.getcwd(), protein_name)
+pdbname = 'CASP11-T0818-K92-P111'
+job_dir = os.path.join(os.getcwd(), pdbname)
 
 protein_dir = os.path.join(os.getcwd(), '../predictions/CASP11/T0818/K92_P111/disgro')
 protein_files = [("disgro_%d_whole.pdb" % i) for i in range(1, 9)]
@@ -398,7 +398,7 @@ def main():
         os.chdir(job_dir)
     mk_posre(dirname, job_dir=job_dir, loop_res=loop_res)
     print(os.getcwd())
-    mk_rid(dirname=dirname, protein_name=protein_name, job_dir=job_dir, task=args.TASK)
+    mk_rid(dirname=dirname, pdbname=pdbname, job_dir=job_dir, task=args.TASK)
     os.chdir('..')
 
 
