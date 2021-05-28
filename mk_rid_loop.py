@@ -164,7 +164,7 @@ def run_md(protein_dir, loop=0):
                 num_sol, box_size[0], box_size[1], box_size[2], num_Na, num_Cl))
     else:
         if os.path.exists('../box_information.txt'):
-            contents = open('../box_information.txt', 'w').readlines()
+            contents = open('../box_information.txt', 'r+').readlines()
             num_sol = int(contents[0].split("=")[1])
             box_size = [float(s) for s in contents[1].split("=")[1].split(",")]
             num_Na = int(contents[2].split("=")[1])
