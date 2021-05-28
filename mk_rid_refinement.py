@@ -321,6 +321,18 @@ def mk_score(where_rw_dir, where_evo_path, target):
 
 
 def main():
+    parser.add_argument('target', type=str)
+    parser.add_argument("TASK", type=str, help="the task", default="rid")
+    parser.add_argument("-d", "--jobdir", type=str, help="job directory")
+    args = parser.parse_args()
+    new_target = args.target
+
+    dirname = os.getcwd()
+    pdbname = [new_target]
+    num_sol = None
+    box_size = []
+    num_Na, num_Cl = None, None
+
     for pp in pdbname:
         pp = pp.strip()
         r_dir = ['%s' % pp, '%s.GNNRefine.DAN1' % pp, '%s.GNNRefine.DAN2' % pp,
@@ -340,21 +352,12 @@ def main():
             mk_posre(dirname, pp)
             os.chdir('..')
 
-        mk_rid(dirname, pp)
+        mk_rid(dirname, pp, job_dir="", task=args.TASK)
         os.chdir('..')
         mk_score(where_rw_dir='/home/dongdong/wyz/rwplus/RWplus', where_evo_path="/home/dongdong/wyz/EvoEF2-master/EvoEF2", target=pp)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='makr rid dir.')
-    parser.add_argument('target', type=str)
-    args = parser.parse_args()
-    new_target = args.target
-
-    dirname = os.getcwd()
-    pdbname = [new_target]
-    num_sol = None
-    box_size = []
-    num_Na, num_Cl = None, None
     main()
 
