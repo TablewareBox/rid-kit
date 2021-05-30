@@ -158,7 +158,7 @@ def make_enhc(iter_index,
     sits_param = jdata.get("sits_settings", None)
     if sits_param is not None:
         sits_param["nst-sits-enerd-out"] = jdata["bias_frame_freq"]
-    
+
     numb_walkers = jdata["numb_walkers"] if not sits_iter else 1
     template_dir = jdata["template_dir"]
     enhc_trust_lvl_1 = jdata["bias_trust_lvl_1"]
@@ -184,8 +184,10 @@ def make_enhc(iter_index,
     assert (len(conf_list) >= numb_walkers), "not enough conf files in mol dir %s" % mol_path
 
     create_path(work_path)
-
+    kappa = np.linspace(2, 16, 8)
+    dis_kappa = np.linspace(4.5, 1, 8)  # a weak distance restraint.
     for walker_idx in range(numb_walkers):
+        kk = kappa[walker_idx]
         walker_path = work_path + make_walker_name(walker_idx) + "/"
         create_path(walker_path)
         if sits_param is not None:
@@ -220,8 +222,8 @@ def make_enhc(iter_index,
         shutil.copy(conf_file, walker_path + "conf_init.gro")
 
         # if have prev confout.gro, use as init conf
-        if (iter_index > 0):
-            # kk = kappa[(walker_idx + iter_index) % 8]
+        if iter_index > 0:
+            kk = kappa[(walker_idx + iter_index) % 8]
             prev_enhc_path = make_iter_name(iter_index - 1) + "/" + enhc_name + "/" + make_walker_name(walker_idx) + "/"
             prev_enhc_path = os.path.abspath(prev_enhc_path) + "/"
             if os.path.isfile(prev_enhc_path + "confout.gro"):
@@ -287,6 +289,8 @@ def make_enhc(iter_index,
             else:
                 graph_list = "%s,%s" % (graph_list, file_name)
             counter = counter + 1
+        posre_file = walker_path + 'posre.itp'
+        replace(posre_file, 'TEMP', '%d' % kk)
         plm_conf = walker_path + enhc_plm
         replace(plm_conf, "MODEL=[^ ]* ", ("MODEL=%s " % graph_list))
         replace(plm_conf, "TRUST_LVL_1=[^ ]* ", ("TRUST_LVL_1=%f " % enhc_trust_lvl_1))
@@ -526,14 +530,15 @@ def clean_enhc_confs(iter_index):
             os.chdir(cwd)
     print('enhc confs clean done')
 
+
 def make_sits_iter(sits_iter_index, json_file, graph_files):
     make_enhc(sits_iter_index, json_file, graph_files, sits_iter=True)
     if sits_iter_index > 0:
-        old_dir = join("sits", make_iter_name(sits_iter_index-1))
+        old_dir = join("sits", make_iter_name(sits_iter_index - 1))
         walker_dir = join("sits", make_iter_name(sits_iter_index), enhc_name, make_walker_name(0))
         try:
-            shutil.copyfile( join(old_dir, "log_nk.dat"), join(walker_dir, "log_nk.dat") )
-            shutil.copyfile( join(old_dir, "log_norm.dat"), join(walker_dir, "log_norm.dat") )
+            shutil.copyfile(join(old_dir, "log_nk.dat"), join(walker_dir, "log_nk.dat"))
+            shutil.copyfile(join(old_dir, "log_norm.dat"), join(walker_dir, "log_norm.dat"))
         except:
             pass
 
@@ -541,8 +546,8 @@ def make_sits_iter(sits_iter_index, json_file, graph_files):
 def run_sits_iter(sits_iter_index, json_file):
     run_enhc(sits_iter_index, json_file, sits_iter=True)
 
-def post_sits_iter(sits_iter_index, json_file):
 
+def post_sits_iter(sits_iter_index, json_file):
     sits_dir = join("sits", make_iter_name(sits_iter_index))
     fp = open(json_file, 'r')
     jdata = json.load(fp)
@@ -568,7 +573,9 @@ def post_sits_iter(sits_iter_index, json_file):
 
 
 def run_train_eff(sits_iter_index, json_file, exec_machine=MachineLocal):
-    run_train(sits_iter_index, json_file, exec_machine=exec_machine, data_name="data%03d" % (sits_iter_index + 1), sits_iter=True)
+    run_train(sits_iter_index, json_file, exec_machine=exec_machine, data_name="data%03d" % (sits_iter_index + 1),
+              sits_iter=True)
+
 
 def post_train_eff(sits_iter_index, json_file):
     # copy trained model in sits_train_path to last rid iter (prev_*)
@@ -620,7 +627,8 @@ def post_train_eff(sits_iter_index, json_file):
             for mfile in models:
                 model_name = os.path.basename(mfile)
                 if os.path.exists(join(prev_train_path, model_name)):
-                    os.rename(join(prev_train_path, model_name), join(prev_train_path, model_name) + ".%03d" % sits_iter_index)
+                    os.rename(join(prev_train_path, model_name),
+                              join(prev_train_path, model_name) + ".%03d" % sits_iter_index)
                 os.symlink(os.path.abspath(mfile), os.path.abspath(join(prev_train_path, model_name)))
 
 
@@ -663,13 +671,13 @@ def run_iter(json_file, init_model):
         kk = int(ii / niter_per_sits)
         data_name = "data%03d" % (kk + 1)
         if ii > 0:
-            prev_model = glob.glob(make_iter_name(ii-1) + "/" + train_name + "/*pb")
+            prev_model = glob.glob(make_iter_name(ii - 1) + "/" + train_name + "/*pb")
         if ii % niter_per_sits == 0:
             log_iter("run_sits_iter", kk, 0)
             if not os.path.exists(join("sits", make_iter_name(kk))):
                 create_path(join("sits", make_iter_name(kk)))
             if kk > 0:
-                open(join("sits", make_iter_name(kk-1), "rid_iter_end.dat"), "w+").write("%d" % ii)
+                open(join("sits", make_iter_name(kk - 1), "rid_iter_end.dat"), "w+").write("%d" % ii)
             open(join("sits", make_iter_name(kk), "rid_iter_begin.dat"), "w+").write("%d" % ii)
             for jj in range((sits_iter_rec[1] + 1) % 6, 6):
                 if kk * max_tasks + jj <= sits_iter_rec[0] * max_tasks + sits_iter_rec[1]:
@@ -691,7 +699,7 @@ def run_iter(json_file, init_model):
                     if kk > 0:
                         post_train_eff(kk, json_file)
                 record_iter(record_sits, kk, jj)
-        
+
         for jj in range(numb_task):
             if ii * max_tasks + jj <= iter_rec[0] * max_tasks + iter_rec[1]:
                 continue

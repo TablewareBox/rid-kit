@@ -174,8 +174,10 @@ def make_enhc(iter_index,
     assert (len(conf_list) >= numb_walkers), "not enough conf files in mol dir %s" % mol_path
 
     create_path(work_path)
-
+    kappa = np.linspace(2, 16, 8)
+    dis_kappa = np.linspace(4.5, 1, 8)  # a weak distance restraint.
     for walker_idx in range(numb_walkers):
+        kk = kappa[walker_idx]
         walker_path = work_path + make_walker_name(walker_idx) + "/"
         create_path(walker_path)
         # copy md ifles
@@ -200,7 +202,7 @@ def make_enhc(iter_index,
 
         # if have prev confout.gro, use as init conf
         if (iter_index > 0):
-            # kk = kappa[(walker_idx + iter_index) % 8]
+            kk = kappa[(walker_idx + iter_index) % 8]
             prev_enhc_path = make_iter_name(iter_index - 1) + "/" + enhc_name + "/" + make_walker_name(walker_idx) + "/"
             prev_enhc_path = os.path.abspath(prev_enhc_path) + "/"
             if os.path.isfile(prev_enhc_path + "confout.gro"):
@@ -257,6 +259,8 @@ def make_enhc(iter_index,
             else:
                 graph_list = "%s,%s" % (graph_list, file_name)
             counter = counter + 1
+        posre_file = walker_path + 'posre.itp'
+        replace(posre_file, 'TEMP', '%d' % kk)
         plm_conf = walker_path + enhc_plm
         replace(plm_conf, "MODEL=[^ ]* ", ("MODEL=%s " % graph_list))
         replace(plm_conf, "TRUST_LVL_1=[^ ]* ", ("TRUST_LVL_1=%f " % enhc_trust_lvl_1))
@@ -437,6 +441,11 @@ def clean_enhc(iter_index):
 
     all_task = glob.glob(work_path + "/[0-9]*[0-9]")
     all_task.sort()
+    all_task += glob.glob(work_path + "/*_job_id")
+    all_task += glob.glob(work_path + "/*_finished")
+    all_task += glob.glob(work_path + "/*.sub")
+    all_task += glob.glob(work_path + "/*.json")
+    all_task += glob.glob(work_path + "/*.sub.o*")
 
     cleaned_files = ['state*.cpt', '*log', 'traj.trr', 'topol.tpr', 'ener.edr', 'mdout.mdp']
     cwd = os.getcwd()
@@ -477,6 +486,20 @@ def clean_enhc_confs(iter_index):
                     os.remove(jj)
             os.chdir(cwd)
     print('enhc confs clean done')
+
+
+def clean_rw_submit():
+    work_path = './rwplus'
+    all_task = glob.glob(work_path + "/*_job_id")
+    all_task += glob.glob(work_path + "/*_finished")
+    all_task += glob.glob(work_path + "/*.sub")
+    all_task += glob.glob(work_path + "/*.json")
+    all_task += glob.glob(work_path + "/*.sub.o*")
+    for ii in all_task:
+        if os.path.isfile(ii):
+            os.remove(ii)
+    print('submit files for rw clean done')
+    return
 
 
 def run_iter(json_file, init_model):
