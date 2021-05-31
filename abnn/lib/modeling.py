@@ -41,7 +41,8 @@ enhc_out_conf = "confs/"
 enhc_out_angle = "angle.rad.out"
 
 mol_name = "mol"
-mol_files = ["grompp.mdp", "grompp_sits.mdp", "grompp_sits_iter.mdp", "grompp_restraint.mdp", "grompp_sits_restraint.mdp", "grompp_sits_iter_restraint.mdp", "topol.top", "posre.itp", "index.ndx"]
+mol_files = ["grompp.mdp", "grompp_sits.mdp", "grompp_sits_iter.mdp", "grompp_restraint.mdp",
+             "grompp_sits_restraint.mdp", "grompp_sits_iter_restraint.mdp", "topol.top", "posre.itp", "index.ndx"]
 
 res_name = "01.resMD"
 res_files = ["cmpf.sh", "cmpf.py", "cmpf_wt.py", "cmpf_wtij.py", "general_mkres.sh", "plumed.res.templ", "tools"]
@@ -49,6 +50,7 @@ res_plm = "plumed.res.dat"
 
 train_name = "02.train"
 train_files = ["model.py", "main.py", "freeze.py"]
+
 
 # Machine V100_8_32 and GPU_2080Ti and T4_16_62
 # resources = Resources(number_node=1, cpu_per_node=8, gpu_per_node=1, queue_name="GPU_2080Ti", group_size=1,
@@ -242,7 +244,9 @@ def make_res(iter_index,
 
         graph_files = glob.glob("*.pb")
         if len(graph_files) != 0:
-            sel_cmd = "python3 test.std.py -m *.pb -t %f -d %s --output sel.out --output-angle sel.angle.out" % (sel_threshold, enhc_out_angle)
+            cluster_threshold = np.loadtxt(join(base_path, "cluster_threshold.dat"))
+            sel_cmd = "python3 test.std.py -m *.pb -t %f -d %s --output sel.out --output-angle sel.angle.out" % \
+                      (sel_threshold, enhc_out_angle)
             sel_cmd = cmd_append_log(sel_cmd, "sel.log")
             log_task("select with threshold %f" % sel_threshold)
             log_task(sel_cmd)
@@ -261,7 +265,7 @@ def make_res(iter_index,
 
         else:
             cluster_threshold = jdata["cluster_threshold"]
-            conf_files = glob.glob( join(enhc_out_conf, "conf*gro") )
+            conf_files = glob.glob(join(enhc_out_conf, "conf*gro"))
             sel_idx = range(len(conf_files))
             sel_angles = np.loadtxt(enhc_out_angle)
             sel_angles = np.reshape(sel_angles, [-1, cv_dim])
@@ -302,7 +306,7 @@ def make_res(iter_index,
                                     "/template/tools/cluster_cv.py -i %s -c %s -t %f --output-idx %s  --output-cv %s"
                                     % ('sel.out',
                                        'sel.angle.out',
-                                        cluster_threshold,
+                                       cluster_threshold,
                                        'cls.sel.out',
                                        'cls.sel.angle.out'
                                        )
@@ -311,7 +315,7 @@ def make_res(iter_index,
             sel_idx = np.loadtxt('cls.sel.out', dtype=np.int)
         elif shell_clustering == False and len(sel_idx) > 1:
             cls_sel = sel_from_cluster(sel_angles, cluster_threshold)
-##############################################################################################
+            ##############################################################################################
             np.savetxt('num_of_cluster.dat', [len(set(cls_sel))], fmt='%d')
             np.savetxt('cluster_threshold.dat', [cluster_threshold], fmt='%f')
             if len(cls_sel) > max_sel:
@@ -619,13 +623,13 @@ def make_train_eff(sits_iter_index, json_file):
                 this_force = np.loadtxt('force.out')
                 force = np.append(force, this_force)
                 ndim = this_force.size
-                assert(ndim == this_centers.size), "center size is diff to force size in " + work_path
+                assert (ndim == this_centers.size), "center size is diff to force size in " + work_path
                 os.chdir(base_path)
 
             centers = np.reshape(centers, [-1, ndim])
             force = np.reshape(force, [-1, ndim])
             data = np.concatenate((centers, force), axis=1)
-            np.savetxt(res_path + 'data%03d.raw' % (sits_iter_index+1), data, fmt="%.6e")
+            np.savetxt(res_path + 'data%03d.raw' % (sits_iter_index + 1), data, fmt="%.6e")
 
             norm_force = np.linalg.norm(force, axis=1)
             log_task("min|f| = %e  max|f| = %e  avg|f| = %e" %
@@ -710,6 +714,7 @@ def make_train_eff(sits_iter_index, json_file):
             os.chdir(base_path)
             for mfile in prev_model_files:
                 shutil.copy(mfile, work_path)
+
 
 def clean_res(iter_index):
     iter_name = make_iter_name(iter_index)
@@ -807,7 +812,7 @@ def make_train(iter_index,
             prev_train_path = prev_iter_name + "/" + train_name + "/"
             prev_train_path = os.path.abspath(prev_train_path) + "/"
             prev_work_path = prev_train_path + ("%03d/" % ii)
-            prev_model_files = glob.glob( join(prev_work_path, "model.ckpt.*") ) + [join(prev_work_path, "checkpoint")]
+            prev_model_files = glob.glob(join(prev_work_path, "model.ckpt.*")) + [join(prev_work_path, "checkpoint")]
             # prev_model_files += [join(prev_work_path, "checkpoint")]
             create_path(old_model_path)
             os.chdir(old_model_path)
@@ -847,7 +852,7 @@ def run_train(iter_index,
     if (filesize == 0) & (not sits_iter):
         prev_iter_index = iter_index - 1
         prev_train_path = join(base_path, make_iter_name(prev_iter_index), train_name) + "/"
-        prev_models = glob.glob( join(prev_train_path, "*.pb") )
+        prev_models = glob.glob(join(prev_train_path, "*.pb"))
         for ii in prev_models:
             model_name = os.path.basename(ii)
             os.symlink(ii, join(train_path, model_name))
@@ -954,6 +959,7 @@ def clean_train(iter_index):
         elif os.path.isfile(ii):
             os.remove(ii)
     print('train clean done')
+
 
 def train_ori(iter_index,
               json_file,
@@ -1073,7 +1079,6 @@ def train_ori(iter_index,
             for ii in prev_model_files:
                 shutil.copy(ii, work_path)
 
-
     numb_model = jdata["numb_model"]
     train_thread = jdata["train_thread"]
     res_iter = jdata["res_iter"]
@@ -1090,7 +1095,7 @@ def train_ori(iter_index,
     if filesize == 0:
         prev_iter_index = iter_index - 1
         prev_train_path = join(base_path, make_iter_name(prev_iter_index), train_ori_name) + "/"
-        prev_models = glob.glob( join(prev_train_path, "*.pb") )
+        prev_models = glob.glob(join(prev_train_path, "*.pb"))
         for ii in prev_models:
             model_name = os.path.basename(ii)
             os.symlink(ii, join(train_path, model_name))
@@ -1151,6 +1156,7 @@ def train_ori(iter_index,
         for ii in range(numb_model):
             os.symlink("%03d/graph.pb" % ii, "graph.%03d.pb" % ii)
         os.chdir(base_path)
+
 
 if __name__ == '__main__':
     run_res(0, '../rid.json')
