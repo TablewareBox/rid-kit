@@ -209,6 +209,7 @@ def make_res(iter_index,
     if sits_param is not None:
         sits_param["nst-sits-enerd-out"] = jdata["res_frame_freq"]
     bPosre = jdata.get("gmx_posre", False)
+    bPosre_res = jdata.get("gmx_posre_res", False)
     numb_walkers = jdata["numb_walkers"]
     template_dir = jdata["template_dir"]
     bias_nsteps = jdata["bias_nsteps"]
@@ -361,7 +362,7 @@ def make_res(iter_index,
                 if os.path.exists(join("sits", "log_norm.dat")):
                     shutil.copyfile(join("sits", "log_norm.dat"), join(work_path, "log_norm.dat"))
                 mol_conf_file = join(work_path, "grompp_sits.mdp")
-                if bPosre:
+                if bPosre_res:
                     mol_conf_file = join(work_path, "grompp_sits_restraint.mdp")
                 make_grompp_sits(mol_conf_file, sits_param, sits_iter=False, iter_index=iter_index)
             conf_file = walker_path + enhc_out_conf + ("conf%d.gro" % sel_idx[ii])
