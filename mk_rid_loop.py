@@ -375,7 +375,7 @@ def main():
 
     args = parser.parse_args()
     job_dir = os.path.abspath(args.jobdir)
-    files = args.mol
+    files = [os.path.abspath(file) for file in args.mol]
     loop = args.loop
     loop_res = list(range(loop[0], loop[1]+1))
 
