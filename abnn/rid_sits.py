@@ -289,8 +289,9 @@ def make_enhc(iter_index,
             else:
                 graph_list = "%s,%s" % (graph_list, file_name)
             counter = counter + 1
-        posre_file = walker_path + 'posre.itp'
-        replace(posre_file, 'TEMP', '%d' % kk)
+        posre_files = glob.glob(walker_path + 'posre*.itp')
+        for posre_file in posre_files:
+            replace(posre_file, 'TEMP', '%d' % kk)
         plm_conf = walker_path + enhc_plm
         replace(plm_conf, "MODEL=[^ ]* ", ("MODEL=%s " % graph_list))
         replace(plm_conf, "TRUST_LVL_1=[^ ]* ", ("TRUST_LVL_1=%f " % enhc_trust_lvl_1))

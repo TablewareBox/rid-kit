@@ -338,7 +338,7 @@ def mk_rid(dirname, pdbname, job_dir, task="rid"):
     for j in range(len(conf_dirs), 8):
         os.system('cp %s/npt.gro %s/conf00%d.gro' % (conf_dirs[0], mol_dir, j))
     os.system('cp %s/npt.gro %s/conf.gro' % ("conf000", mol_dir))
-    os.system('cp posre*.itp %s/' % (mol_dir))
+    os.system('cp *.itp %s/' % (mol_dir))
     os.system('cp index.ndx %s/index.ndx' % (mol_dir))
     os.system('cp %s/mol/*.mdp %s' % (ridkit_dir, mol_dir))
     os.chdir(ridkit_dir)

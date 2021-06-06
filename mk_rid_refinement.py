@@ -272,7 +272,7 @@ def mk_posre(dirname, pdbname):
     t_ref = md.load(structure, top=structure)
     topology = t_ref.topology
     ca_atoms = topology.select('name CA') + 1
-    wf = open('posre.itp.templ', 'w')
+    wf = open('posre.itp', 'w')
     wf.write('[ position_restraints ]\n;  i funct       g         r(nm)       k\n')
     for i in range(len(ca_atoms)):
         wf.write('%d    2        1          %f       TEMP\n' % (ca_atoms[i], array_r0[i // window_num]))
@@ -293,7 +293,7 @@ def mk_rid(dirname, pdbname, job_dir, task="rid"):
     for j in range(len(_r_dir), 8):
         os.system('cp %s/npt.gro %s/conf00%d.gro' % (_r_dir[0], mol_dir, j))
     os.system('cp %s/npt.gro %s/conf.gro' % (pdbname, mol_dir))
-    os.system('cp %s/posre.itp.templ %s/posre.itp' % (pdbname, mol_dir))
+    os.system('cp *.itp %s' % (mol_dir))
     os.system('cp %s/mol/*.mdp %s' % (ridkit_dir, mol_dir))
     # raise RuntimeError
     os.chdir(ridkit_dir)
