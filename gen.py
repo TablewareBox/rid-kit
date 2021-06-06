@@ -13,7 +13,7 @@ from tools.general_plumed import cal_cv_dim
 from tools.general_plumed import general_plumed
 
 mol_dir_fmt = "mol/alan/%s/%02d"
-bf_file_copy = ["conf.gro", "grompp.mdp", "grompp_restraint.mdp", "topol.top", "posre.itp"]
+bf_file_copy = ["conf.gro", "grompp.mdp", "grompp_restraint.mdp", "topol.top", "*.itp"]
 res_file_copy = ["clean.sh", "cmpf.sh", "cmpf.py",
                  "general_mkres.sh", "tools", "run.res.sh", "equi.mdp"]
 afed_file_copy = ["sel.angle.py"]
@@ -25,6 +25,32 @@ rit_param = "rit.json"
 rit_file_copy = [rit_run, rit_param, "template", "lib"]
 strm_file_copy = ["strm.py", "init.py", "ener.py", "param.json",
                   "librun.py", "libstring.py", "MachineSlurm.py", "MachineLocal.py"]
+
+
+def copy_file_list(file_list, from_path, to_path):
+    for jj in file_list:
+        files = glob.glob(os.path.join(from_path, jj))
+        for file in files:
+            if os.path.isfile(file):
+                try:
+                    shutil.copy(file, to_path)
+                except:
+                    pass
+            elif os.path.isdir(file):
+                try:
+                    cwd = os.getcwd()
+                    os.chdir(file)
+                    files = glob.glob("*")
+                    os.chdir(cwd)
+                    os.makedirs(os.path.join(to_path, jj))
+                    for ff in files:
+                        shutil.copy(os.path.join(file, ff), os.path.join(to_path, jj, ff))
+                    #    print(from_path+jj+'/'+ff, to_path+jj+'/'+ff)
+                    # if os.path.exists(to_path+jj) :
+                    #     print('error!!!!!!!!!!!!!!!!')
+                    # shutil.copytree (from_path + jj, to_path + jj)
+                except:
+                    pass
 
 
 def replace(file_name, pattern, subst):
@@ -80,12 +106,7 @@ def gen_bf(out_dir,
     out_dir += "/"
 
     create_path(out_dir)
-
-    for ii in bf_file_copy:
-        try:
-            shutil.copy(mol_dir + ii, out_dir)
-        except:
-            pass
+    copy_file_list(bf_file_copy, mol_dir, out_dir)
     mdps = glob.glob(out_dir + "*.mdp")
     for mdp in mdps:
         make_grompp_res(mdp, 50000, bf_traj_stride)
@@ -137,26 +158,23 @@ def gen_res(out_dir,
 
     create_path(out_dir)
 
-    for ii in bf_file_copy:
-        try:
-            shutil.copy(mol_dir + ii, out_dir)
-        except:
-            pass
+    copy_file_list(bf_file_copy, mol_dir, out_dir)
     mdps = glob.glob(out_dir + "*.mdp")
     for mdp in mdps:
         make_grompp_res(mdp, 50000, res_traj_stride)
 
-    for ii in res_file_copy:
-        if os.path.isdir(res_dir + ii):
-            try:
-                shutil.copytree(res_dir + ii, out_dir + ii)
-            except:
-                pass
-        elif os.path.isfile(res_dir + ii):
-            try:
-                shutil.copy(res_dir + ii, out_dir)
-            except:
-                pass
+    # for ii in res_file_copy:
+    #     if os.path.isdir(res_dir + ii):
+    #         try:
+    #             shutil.copytree(res_dir + ii, out_dir + ii)
+    #         except:
+    #             pass
+    #     elif os.path.isfile(res_dir + ii):
+    #         try:
+    #             shutil.copy(res_dir + ii, out_dir)
+    #         except:
+    #             pass
+    copy_file_list(res_file_copy, res_dir, out_dir)
 
     ret = general_plumed("res", conf_file, cv_file,
                          kappa=res_kappa,
@@ -225,8 +243,7 @@ def gen_afed(out_dir,
 
     create_path(out_dir)
 
-    for ii in bf_file_copy:
-        shutil.copy(mol_dir + ii, out_dir)
+    copy_file_list(bf_file_copy, mol_dir, out_dir)
     mdps = glob.glob(out_dir + "*.mdp")
     for mdp in mdps:
         make_grompp_res(mdp, 50000, afed_traj_stride)
@@ -297,17 +314,18 @@ def gen_rid(out_dir,
     create_path(out_dir)
 
     # rid root
-    for ii in rid_file_copy:
-        if os.path.isdir(rid_dir + ii):
-            try:
-                shutil.copytree(rid_dir + ii, out_dir + ii)
-            except:
-                pass
-        elif os.path.isfile(rid_dir + ii):
-            try:
-                shutil.copy(rid_dir + ii, out_dir)
-            except:
-                pass
+    # for ii in rid_file_copy:
+    #     if os.path.isdir(rid_dir + ii):
+    #         try:
+    #             shutil.copytree(rid_dir + ii, out_dir + ii)
+    #         except:
+    #             pass
+    #     elif os.path.isfile(rid_dir + ii):
+    #         try:
+    #             shutil.copy(rid_dir + ii, out_dir)
+    #         except:
+    #             pass
+    copy_file_list(rid_file_copy, rid_dir, out_dir)
     assert rid_run in rid_file_copy, "rid file should have run.py"
     assert rid_param in rid_file_copy, "rid file should have param.json"
     assert "template" in rid_file_copy, "rid file should have template"
@@ -364,11 +382,12 @@ def gen_rid_sits(out_dir,
     create_path(out_dir)
 
     # rid root
-    for ii in rid_file_copy:
-        if os.path.isdir(rid_dir + ii):
-            shutil.copytree(rid_dir + ii, out_dir + ii)
-        elif os.path.isfile(rid_dir + ii):
-            shutil.copy(rid_dir + ii, out_dir)
+    # for ii in rid_file_copy:
+    #     if os.path.isdir(rid_dir + ii):
+    #         shutil.copytree(rid_dir + ii, out_dir + ii)
+    #     elif os.path.isfile(rid_dir + ii):
+    #         shutil.copy(rid_dir + ii, out_dir)
+    copy_file_list(rid_file_copy, rid_dir, out_dir)
     assert rid_run in rid_file_copy, "rid file should have run.py"
     assert rid_param in rid_file_copy, "rid file should have param.json"
     assert "template" in rid_file_copy, "rid file should have template"
@@ -562,7 +581,8 @@ def _main():
         rid_run = "rid_sits.py"
         rid_param = "rid_sits.json"
         rid_file_copy = [rid_run, rid_param, "template", "lib"]
-        bf_file_copy += ["grompp_sits_iter.mdp", "grompp_sits.mdp", "grompp_sits_iter_restraint.mdp", "grompp_sits_restraint.mdp", "posre.itp", "index.ndx"]
+        bf_file_copy += ["grompp_sits_iter.mdp", "grompp_sits.mdp", "grompp_sits_iter_restraint.mdp",
+                         "grompp_sits_restraint.mdp", "posre.itp", "index.ndx"]
         res_file_copy += ["cmpf_wt.py", "cmpf_wtij.py"]
         gen_rid(args.output, args.GEN_DEF,
                 args.CV_DEF, mol_dir, res_dir, rid_dir)
