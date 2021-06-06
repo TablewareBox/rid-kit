@@ -201,14 +201,8 @@ def make_enhc(iter_index,
                     shutil.copyfile(join("sits", "log_norm.dat"), join(walker_path, "log_norm.dat"))
                 except:
                     pass
-        # copy md ifles
-        for ii in mol_files:
-            if os.path.exists(walker_path + ii):
-                os.remove(walker_path + ii)
-            try:
-                shutil.copy(mol_path + ii, walker_path)
-            except:
-                pass
+        # copy md files
+        copy_file_list(mol_files, mol_path, walker_path)
         # copy conf file
         conf_file = conf_list[walker_idx]
         if os.path.exists(walker_path + "conf.gro"):

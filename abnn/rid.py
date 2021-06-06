@@ -181,13 +181,7 @@ def make_enhc(iter_index,
         walker_path = work_path + make_walker_name(walker_idx) + "/"
         create_path(walker_path)
         # copy md ifles
-        for ii in mol_files:
-            if os.path.exists(walker_path + ii):
-                os.remove(walker_path + ii)
-            try:
-                shutil.copy(mol_path + ii, walker_path)
-            except:
-                pass
+        copy_file_list(mol_files, mol_path, walker_path)
         # copy conf file
         conf_file = conf_list[walker_idx]
         if os.path.exists(walker_path + "conf.gro"):
