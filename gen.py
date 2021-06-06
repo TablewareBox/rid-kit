@@ -38,17 +38,7 @@ def copy_file_list(file_list, from_path, to_path):
                     pass
             elif os.path.isdir(file):
                 try:
-                    cwd = os.getcwd()
-                    os.chdir(file)
-                    files = glob.glob("*")
-                    os.chdir(cwd)
-                    os.makedirs(os.path.join(to_path, jj))
-                    for ff in files:
-                        shutil.copy(os.path.join(file, ff), os.path.join(to_path, jj, ff))
-                    #    print(from_path+jj+'/'+ff, to_path+jj+'/'+ff)
-                    # if os.path.exists(to_path+jj) :
-                    #     print('error!!!!!!!!!!!!!!!!')
-                    # shutil.copytree (from_path + jj, to_path + jj)
+                    shutil.copytree(file, to_path)
                 except:
                     pass
 
