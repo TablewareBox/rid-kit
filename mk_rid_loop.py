@@ -252,7 +252,7 @@ EOF''' % (structure,
           list_biased_ang[0], list_biased_ang[-1])
     os.system(cmd_make_ndx)
 
-    t_ref = md.load(structure, top=structure_pdb)
+    t_ref = md.load(structure_pdb, top=structure_pdb)
     t_select = md.load(structure, top=structure)
     topology = t_ref.topology
     top_select = t_select.topology
