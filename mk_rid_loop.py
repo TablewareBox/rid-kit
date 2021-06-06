@@ -210,7 +210,7 @@ def run_md(protein_dir, loop=0):
     os.system('cp topol.top topol.top.bak')
 
 
-def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1):
+def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1, chain_id=0):
     """
     We will add position restrain to gmx via .itp file.
     For atoms chosen, we apply a score gotten from GNNQA.1DDT, which can predict the residue division from the native structure. 
@@ -232,7 +232,7 @@ def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1):
     replace('phipsi_selected.json', '.*selected_index.*',
             '    "selected_index":  %s,' % list_biased_ang)
 
-    structure = 'conf000/nvt.gro'
+    structure = 'conf000/conf000.pdb'
     #   kappa=0.025      #kcal/mol/A2   *4.184*100
     # kappa=15             #kj/mol/nm2
 
@@ -261,6 +261,8 @@ EOF''' % (structure,
 
     for ch in range(topology.n_chains):
         atoms_before = 0 if ch == 0 else list(topology.chain(ch - 1).atoms)[-1].index + 1
+        if ch != chain_id:
+            continue
         for res in loop_res:
             res_atoms_global = list(topology.select('(mass 2.0 to 90) and (residue %d) and (chainid %d)' % (res, ch)) + 1)
             res_atoms = [(atom - atoms_before) for atom in res_atoms_global]
@@ -272,7 +274,7 @@ EOF''' % (structure,
             for i in range(len(ca_atoms)):
                 posre_flat_bottom[ch] += '%d    2        1          %f       TEMP\n' % (ca_atoms[i], max(0, flat_bottom))
 
-    atoms_loop = [str(atom) for atom in atoms_loop]
+    atoms_loop = [[str(atom) for atom in chain] for chain in atoms_loop]
     print(atoms_loop)
 
     for root, dirs, files in os.walk(job_dir):
@@ -280,12 +282,13 @@ EOF''' % (structure,
         break
 
     os.chdir(conf_dirs[0])
-    posre_files = glob.glob("posre*.itp").sort()
+    posre_files = glob.glob("posre*.itp")
+    posre_files.sort()
     os.chdir(job_dir)
 
     assert len(posre_files) == topology.n_chains
 
-    for ch in topology.n_chains:
+    for ch in range(topology.n_chains):
         for conf_dir in conf_dirs:
             os.chdir(conf_dir)
             wf = open(posre_files[ch], 'r+')
@@ -386,6 +389,7 @@ def main():
     parser.add_argument("-d", "--jobdir", type=str, help="job directory", default=job_dir)
     parser.add_argument("-m", "--mol", default=files, type=str, help="the mol dir", nargs="*")
     parser.add_argument("-l", "--loop", default=loop, type=int, help="loop range", nargs="*")
+    parser.add_argument("-c", "--chain", default=0, type=int, help="chain id")
 
     args = parser.parse_args()
     job_dir = os.path.abspath(args.jobdir)
@@ -410,7 +414,7 @@ def main():
         replace('topol.top', '.*charmm36-mar2019.ff',
                 '#include "{}/charmm36-mar2019.ff'.format(dirname))
         os.chdir(job_dir)
-    mk_posre(dirname, job_dir=job_dir, loop_res=loop_res)
+    mk_posre(dirname, job_dir=job_dir, loop_res=loop_res, chain_id=args.chain)
     print(os.getcwd())
     mk_rid(dirname=dirname, pdbname=pdbname, job_dir=job_dir, task=args.TASK)
     os.chdir('..')
