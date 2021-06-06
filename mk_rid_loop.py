@@ -232,7 +232,8 @@ def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1, chain_id=0):
     replace('phipsi_selected.json', '.*selected_index.*',
             '    "selected_index":  %s,' % list_biased_ang)
 
-    structure = 'conf000/conf000.pdb'
+    structure_pdb = 'conf000/conf000.pdb'
+    structure = 'conf000/nvt.gro'
     #   kappa=0.025      #kcal/mol/A2   *4.184*100
     # kappa=15             #kj/mol/nm2
 
@@ -251,8 +252,10 @@ EOF''' % (structure,
           list_biased_ang[0], list_biased_ang[-1])
     os.system(cmd_make_ndx)
 
-    t_ref = md.load(structure, top=structure)
+    t_ref = md.load(structure, top=structure_pdb)
+    t_select = md.load(structure, top=structure)
     topology = t_ref.topology
+    top_select = t_select.topology
 
     atoms_loop = [[] for _ in range(topology.n_chains)]
     atoms_loopCA = [[] for _ in range(topology.n_chains)]
@@ -264,11 +267,11 @@ EOF''' % (structure,
         if ch != chain_id:
             continue
         for res in loop_res:
-            res_atoms_global = list(topology.select('(mass 2.0 to 90) and (residue %d) and (chainid %d)' % (res, ch)) + 1)
+            res_atoms_global = list(top_select.select('(mass 2.0 to 90) and (residue %d) and (chainid %d)' % (res, ch)) + 1)
             res_atoms = [(atom - atoms_before) for atom in res_atoms_global]
             atoms_loop[ch] += res_atoms
 
-            ca_atoms_global = list(topology.select('(name CA) and (residue %d) and (chainid %d)' % (res, ch)) + 1)
+            ca_atoms_global = list(top_select.select('(name CA) and (residue %d) and (chainid %d)' % (res, ch)) + 1)
             ca_atoms = [(atom - atoms_before) for atom in ca_atoms_global]
             atoms_loopCA[ch] += ca_atoms
             for i in range(len(ca_atoms)):
