@@ -293,7 +293,7 @@ def mk_rid(dirname, pdbname, job_dir, task="rid"):
     for j in range(len(_r_dir), 8):
         os.system('cp %s/npt.gro %s/conf00%d.gro' % (_r_dir[0], mol_dir, j))
     os.system('cp %s/npt.gro %s/conf.gro' % (pdbname, mol_dir))
-    os.system('cp *.itp %s' % (mol_dir))
+    os.system('cp %s/*.itp %s' % (pdbname, mol_dir))
     os.system('cp %s/mol/*.mdp %s' % (ridkit_dir, mol_dir))
     # raise RuntimeError
     os.chdir(ridkit_dir)
