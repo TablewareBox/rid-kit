@@ -219,6 +219,7 @@ def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1):
 
     2021/2/25 modified, we will use averange smooth function select CVs, instead of 'in group 5'.
     """
+    job_dir = os.path.abspath(job_dir)
     os.chdir(job_dir)
 
     biased_ang = sorted(set(loop_res))
@@ -234,11 +235,6 @@ def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1):
     structure = 'conf000/nvt.gro'
     #   kappa=0.025      #kcal/mol/A2   *4.184*100
     # kappa=15             #kj/mol/nm2
-    t_ref = md.load(structure, top=structure)
-    topology = t_ref.topology
-
-    atoms_loop = []
-    atoms_loopCA = []
 
     cmd_make_ndx = '''\
 gmx make_ndx -f %s -o index.ndx << EOF
@@ -255,15 +251,26 @@ EOF''' % (structure,
           list_biased_ang[0], list_biased_ang[-1])
     os.system(cmd_make_ndx)
 
-    posre_flat_bottom = '[ position_restraints ]\n;  i funct       g         r(nm)       k\n'
-    for res in loop_res:
-        res_atoms = list(topology.select('(mass 2.0 to 90) and (residue %d)' % res) + 1)
-        atoms_loop += res_atoms
+    t_ref = md.load(structure, top=structure)
+    topology = t_ref.topology
 
-        ca_atoms = list(topology.select('(name CA) and (residue %d)' % res) + 1)
-        atoms_loopCA += ca_atoms
-        for i in range(len(ca_atoms)):
-            posre_flat_bottom += '%d    2        1          %f       TEMP\n' % (ca_atoms[i], max(0, flat_bottom))
+    atoms_loop = [[] for _ in range(topology.n_chains)]
+    atoms_loopCA = [[] for _ in range(topology.n_chains)]
+
+    posre_flat_bottom = ['[ position_restraints ]\n;  i funct       g         r(nm)       k\n' for _ in range(topology.n_chains)]
+
+    for ch in range(topology.n_chains):
+        atoms_before = 0 if ch == 0 else list(topology.chain(ch - 1).atoms)[-1].index + 1
+        for res in loop_res:
+            res_atoms_global = list(topology.select('(mass 2.0 to 90) and (residue %d) and (chainid %d)' % (res, ch)) + 1)
+            res_atoms = [(atom - atoms_before) for atom in res_atoms_global]
+            atoms_loop[ch] += res_atoms
+
+            ca_atoms_global = list(topology.select('(name CA) and (residue %d) and (chainid %d)' % (res, ch)) + 1)
+            ca_atoms = [(atom - atoms_before) for atom in ca_atoms_global]
+            atoms_loopCA[ch] += ca_atoms
+            for i in range(len(ca_atoms)):
+                posre_flat_bottom[ch] += '%d    2        1          %f       TEMP\n' % (ca_atoms[i], max(0, flat_bottom))
 
     atoms_loop = [str(atom) for atom in atoms_loop]
     print(atoms_loop)
@@ -272,31 +279,38 @@ EOF''' % (structure,
         conf_dirs = [dir for dir in dirs if dir.startswith("conf")]
         break
 
-    for conf_dir in conf_dirs:
-        os.chdir(conf_dir)
-        wf = open('posre.itp', 'r+')
-        lines = wf.readlines()
-        wf.seek(0, 0)
+    os.chdir(conf_dirs[0])
+    posre_files = glob.glob("posre*.itp").sort()
+    os.chdir(job_dir)
 
-        posre_all = ''
+    assert len(posre_files) == topology.n_chains
 
-        for line in lines:
-            numbers = line.lstrip().split()
-            if numbers == []:
-                posre_all += line
-                continue
-            atom_str = numbers[0]
-            if atom_str not in atoms_loop:
-                posre_all += line
-        if flat_bottom != -1:
-            posre_all += posre_flat_bottom
+    for ch in topology.n_chains:
+        for conf_dir in conf_dirs:
+            os.chdir(conf_dir)
+            wf = open(posre_files[ch], 'r+')
+            lines = wf.readlines()
+            wf.seek(0, 0)
+
+            posre_all = ''
+
+            for line in lines:
+                numbers = line.lstrip().split()
+                if numbers == []:
+                    posre_all += line
+                    continue
+                atom_str = numbers[0]
+                if atom_str not in atoms_loop[ch]:
+                    posre_all += line
+            if flat_bottom != -1:
+                posre_all += posre_flat_bottom
+            wf.write(posre_all)
+            wf.close()
+            os.chdir(job_dir)
+
+        wf = open(posre_files[ch], 'w')
         wf.write(posre_all)
         wf.close()
-        os.chdir("..")
-
-    wf = open('posre.itp.templ', 'w')
-    wf.write(posre_all)
-    wf.close()
 
 
 def mk_rid(dirname, pdbname, job_dir, task="rid"):
@@ -318,7 +332,7 @@ def mk_rid(dirname, pdbname, job_dir, task="rid"):
     for j in range(len(conf_dirs), 8):
         os.system('cp %s/npt.gro %s/conf00%d.gro' % (conf_dirs[0], mol_dir, j))
     os.system('cp %s/npt.gro %s/conf.gro' % ("conf000", mol_dir))
-    os.system('cp posre.itp.templ %s/posre.itp' % (mol_dir))
+    os.system('cp posre*.itp %s/' % (mol_dir))
     os.system('cp index.ndx %s/index.ndx' % (mol_dir))
     os.system('cp %s/mol/*.mdp %s' % (ridkit_dir, mol_dir))
     os.chdir(ridkit_dir)

@@ -42,7 +42,7 @@ enhc_out_angle = "angle.rad.out"
 
 mol_name = "mol"
 mol_files = ["grompp.mdp", "grompp_sits.mdp", "grompp_sits_iter.mdp", "grompp_restraint.mdp",
-             "grompp_sits_restraint.mdp", "grompp_sits_iter_restraint.mdp", "topol.top", "posre.itp", "index.ndx"]
+             "grompp_sits_restraint.mdp", "grompp_sits_iter_restraint.mdp", "topol.top", "*.itp", "index.ndx"]
 
 res_name = "01.resMD"
 res_files = ["cmpf.sh", "cmpf.py", "cmpf_wt.py", "cmpf_wtij.py", "general_mkres.sh", "plumed.res.templ", "tools"]
@@ -153,27 +153,28 @@ def make_grompp_sits(gro_file, sits_data, sits_iter=False, iter_index=0):
 
 def copy_file_list(file_list, from_path, to_path):
     for jj in file_list:
-        file = join(from_path, jj)
-        if os.path.isfile(file):
-            try:
-                shutil.copy(file, to_path)
-            except:
-                pass
-        elif os.path.isdir(file):
-            try:
-                cwd = os.getcwd()
-                os.chdir(file)
-                files = glob.glob("*")
-                os.chdir(cwd)
-                os.makedirs(join(to_path, jj))
-                for ff in files:
-                    shutil.copy(join(file, ff), join(to_path, jj, ff))
-                #    print(from_path+jj+'/'+ff, to_path+jj+'/'+ff)
-                # if os.path.exists(to_path+jj) :
-                #     print('error!!!!!!!!!!!!!!!!')
-                # shutil.copytree (from_path + jj, to_path + jj)
-            except:
-                pass
+        files = glob.glob(join(from_path, jj))
+        for file in files:
+            if os.path.isfile(file):
+                try:
+                    shutil.copy(file, to_path)
+                except:
+                    pass
+            elif os.path.isdir(file):
+                try:
+                    cwd = os.getcwd()
+                    os.chdir(file)
+                    files = glob.glob("*")
+                    os.chdir(cwd)
+                    os.makedirs(join(to_path, jj))
+                    for ff in files:
+                        shutil.copy(join(file, ff), join(to_path, jj, ff))
+                    #    print(from_path+jj+'/'+ff, to_path+jj+'/'+ff)
+                    # if os.path.exists(to_path+jj) :
+                    #     print('error!!!!!!!!!!!!!!!!')
+                    # shutil.copytree (from_path + jj, to_path + jj)
+                except:
+                    pass
 
 
 def create_path(path):
