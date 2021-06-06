@@ -38,7 +38,7 @@ def copy_file_list(file_list, from_path, to_path):
                     pass
             elif os.path.isdir(file):
                 try:
-                    shutil.copytree(file, to_path)
+                    shutil.copytree(file, os.path.join(to_path, os.path.basename(file)))
                 except:
                     pass
 
