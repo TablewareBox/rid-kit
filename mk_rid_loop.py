@@ -222,7 +222,7 @@ def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1, chain_id=0):
     job_dir = os.path.abspath(job_dir)
     os.chdir(job_dir)
 
-    biased_ang = sorted(set(loop_res))
+    biased_ang = sorted(set([(res - 1) for res in loop_res]))
     print(biased_ang)
     np.savetxt('biased_res.txt', list(biased_ang), fmt='%d')
     list_biased_ang = []
