@@ -227,10 +227,10 @@ def mk_posre(dirname, job_dir, loop_res=[], flat_bottom=-1, chain_id=0):
     np.savetxt('biased_res.txt', list(biased_ang), fmt='%d')
     list_biased_ang = []
     for aa in biased_ang:
-        list_biased_ang.append(aa)
+        list_biased_ang.append(aa + 1)
     os.system('cp %s/jsons/phipsi_selected.json ./' % ridkit_dir)
     replace('phipsi_selected.json', '.*selected_index.*',
-            '    "selected_index":  %s,' % list_biased_ang)
+            '    "selected_index":  %s,' % list(biased_ang))
 
     structure_pdb = 'conf000/conf000.pdb'
     structure = 'conf000/nvt.gro'
